@@ -41,7 +41,7 @@ export default function DashboardPage() {
 
       {/* --- EARNINGS CARD (The "Hero") --- */}
       <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white border-none shadow-lg">
-        <CardContent className="p-6">
+        <CardContent className="px-4">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-blue-100 text-sm font-medium">Current Balance</p>
