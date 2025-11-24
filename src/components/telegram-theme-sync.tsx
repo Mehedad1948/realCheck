@@ -1,37 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
-// 1. تعریف Interfaceها برای ThemeParams و TelegramWebAppInfo
-interface ThemeParams {
-  bg_color?: string;
-  text_color?: string;
-  hint_color?: string;
-  link_color?: string;
-  button_color?: string;
-  button_text_color?: string;
-  secondary_bg_color?: string;
-  // اگر پارامترهای دیگری دارید، اینجا اضافه کنید
-}
-
-interface TelegramWebAppInfo {
-  colorScheme?: string;
-  themeParams?: ThemeParams; // themeParams می‌تواند undefined باشد
-  initData?: string;
-  version?: string;
-  platform?: string;
-  isExpanded?: boolean;
-  viewportHeight?: number;
-  viewportStableHeight?: number;
-  isClosingConfirmationEnabled?: boolean;
-  // سایر خصوصیات مرتبط با Telegram.WebApp
-}
-
 export function TelegramThemeSync() {
   const { setTheme } = useTheme();
-  // 2. استفاده از Interface در useState
-  const [tgData, setTgData] = useState<TelegramWebAppInfo | null>(null);
+  
+  // Use 'WebApp' type from the global namespace provided by the package
+  // or just 'any' if you want to be lazy, but strictly:
+  const [tgData, setTgData] = useState<any | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.Telegram?.WebApp) {
@@ -41,103 +19,85 @@ export function TelegramThemeSync() {
       tg.expand();
 
       const updateTgData = () => {
-        // ساخت یک شیء ThemeParams با تایپ مشخص
-        // اطمینان حاصل می‌کنیم که themeParams همیشه یک شیء معتبر باشد
-        const currentThemeParams: ThemeParams = {
-          bg_color: tg.themeParams?.bg_color,
-          text_color: tg.themeParams?.text_color,
-          hint_color: tg.themeParams?.hint_color,
-          link_color: tg.themeParams?.link_color,
-          button_color: tg.themeParams?.button_color,
-          button_text_color: tg.themeParams?.button_text_color,
-          secondary_bg_color: tg.themeParams?.secondary_bg_color,
-        };
+        // Save the whole WebApp object to state
+        // (You usually don't need to copy params manually, just store the ref)
+        setTgData({ ...tg }); // Create a shallow copy to trigger re-render
 
-        setTgData({
-          colorScheme: tg.colorScheme,
-          themeParams: currentThemeParams, // انتساب شیء تایپ‌شده
-          initData: tg.initData,
-          version: tg.version,
-          platform: tg.platform,
-          isExpanded: tg.isExpanded,
-          viewportHeight: tg.viewportHeight,
-          viewportStableHeight: tg.viewportStableHeight,
-          isClosingConfirmationEnabled: tg.isClosingConfirmationEnabled,
-        });
-
-        // setTheme(tg.colorScheme || 'light'); // می‌توانید یک مقدار پیش‌فرض هم بدهید
+        // 1. Sync Next-Themes
         if (tg.colorScheme) {
           setTheme(tg.colorScheme);
         }
 
-        const bgColor = tg.themeParams?.bg_color || "#ffffff"; // استفاده از ?. برای ایمنی
+        // 2. Sync Telegram Header & Background
+        const bgColor = tg.themeParams?.bg_color || "#ffffff";
         tg.setHeaderColor(bgColor);
         tg.setBackgroundColor(bgColor);
       };
 
+      // Initial Run
       updateTgData();
 
-      tg.onEvent("themeChanged", () => {
-        updateTgData();
-      });
+      // Event Listener (Using correct camelCase)
+      tg.onEvent("themeChanged", updateTgData);
+
+      // Cleanup function to remove listener (Good practice)
+      return () => {
+        tg.offEvent("themeChanged", updateTgData);
+      };
     }
   }, [setTheme]);
 
   if (!tgData) {
     return (
       <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-        در انتظار بارگیری داده‌های Telegram WebApp... (اگر در WebApp تلگرام نیستید، این پیام باقی می‌ماند.)
+        Waiting for Telegram WebApp...
       </div>
     );
   }
 
   return (
-    <div className="p-4 bg-white dark:bg-gray-800 shadow rounded-lg">
-      <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">اطلاعات Telegram WebApp</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 dark:text-gray-300">
-        <div>
-          <p><strong>Color Scheme:</strong> {tgData.colorScheme || "نامشخص"}</p>
-          <p><strong>Platform:</strong> {tgData.platform || "نامشخص"}</p>
-          <p><strong>Version:</strong> {tgData.version || "نامشخص"}</p>
-          <p><strong>Expanded:</strong> {tgData.isExpanded ? "بله" : "خیر"}</p>
-          <p><strong>Viewport Height:</strong> {tgData.viewportHeight?.toFixed(2) || "نامشخص"}px</p>
-          <p><strong>Viewport Stable Height:</strong> {tgData.viewportStableHeight?.toFixed(2) || "نامشخص"}px</p>
-          <p><strong>Closing Confirmation:</strong> {tgData.isClosingConfirmationEnabled ? "فعال" : "غیرفعال"}</p>
+    <div className="p-4 bg-white dark:bg-gray-800 shadow rounded-lg space-y-4">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+        Telegram Debug Info
+      </h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        {/* General Info */}
+        <div className="space-y-1 text-gray-700 dark:text-gray-300">
+          <p><strong>Color Scheme:</strong> {tgData.colorScheme}</p>
+          <p><strong>Platform:</strong> {tgData.platform}</p>
+          <p><strong>Version:</strong> {tgData.version}</p>
+          <p><strong>Expanded:</strong> {tgData.isExpanded ? "Yes" : "No"}</p>
         </div>
+
+        {/* Theme Params */}
         <div>
-          <h3 className="font-medium mb-2 text-gray-800 dark:text-gray-200">پارامترهای تم (Theme Params):</h3>
-          {/* اطمینان حاصل کنید که tgData.themeParams undefined نیست */}
-          {tgData.themeParams && (
-            <ul className="list-disc list-inside space-y-1">
-              {/* حل مشکل TypeScript با استفاده از Object.keys و Type Assertion */}
-              {(Object.keys(tgData.themeParams) as Array<keyof ThemeParams>).map((key) => {
-                const value = tgData.themeParams?.[key]; // استفاده از ?. برای ایمنی در برابر undefined
-
-                // فقط نمایش دادن پارامترهایی که مقدار دارند
-                if (value === undefined) {
-                  return null;
-                }
-
-                return (
-                  <li key={key}>
-                    {key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}:{" "}
-                    <span style={{ color: value }}>{value}</span>{" "}
-                    <span
-                      className="inline-block w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600 align-middle ml-1"
-                      style={{ backgroundColor: value }}
-                    ></span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <h3 className="font-medium mb-2 text-gray-800 dark:text-gray-200">
+            Theme Params
+          </h3>
+          <ul className="space-y-1">
+            {tgData.themeParams && Object.entries(tgData.themeParams).map(([key, value]) => (
+              <li key={key} className="flex items-center justify-between text-xs">
+                <span className="text-gray-500">{key}:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono">{value as string}</span>
+                  <span 
+                    className="w-3 h-3 rounded-full border border-gray-500"
+                    style={{ backgroundColor: value as string }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
-      <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-        <h3 className="font-medium mb-2 text-gray-800 dark:text-gray-200">داده‌های اولیه (Init Data):</h3>
-        <p className="text-sm break-all text-gray-600 dark:text-gray-400">
-          {tgData.initData ? tgData.initData.substring(0, 200) + "..." : "موجود نیست"}
-        </p>
+      
+      {/* Init Data */}
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <h3 className="font-medium mb-1 text-gray-800 dark:text-gray-200">Init Data Payload:</h3>
+        <code className="block text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded break-all text-gray-500">
+          {tgData.initData || "No init data available"}
+        </code>
       </div>
     </div>
   );
