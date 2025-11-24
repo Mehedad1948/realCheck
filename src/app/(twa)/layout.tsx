@@ -1,6 +1,6 @@
 import { TelegramThemeSync } from "@/components/telegram-theme-sync";
 import { ThemeProvider } from 'next-themes';
-import "../../globals.css"; // <--- CRITICAL: You must import your CSS here!
+import "../globals.css"
 
 export const viewport = {
   width: 'device-width',
