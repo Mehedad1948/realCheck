@@ -5,15 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Wallet, 
-  Play, 
-  CheckCircle2, 
-  TrendingUp, 
-  Zap, 
+import {
+  Wallet,
+  Play,
+  CheckCircle2,
+  TrendingUp,
+  Zap,
   ShieldCheck,
   ArrowRight
 } from "lucide-react";
+import Link from 'next/link';
 
 export default function DashboardPage() {
   // MOCK DATA: In the future, these will come from your backend API
@@ -26,7 +27,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 space-y-6 pb-20 max-w-xl mx-auto">
-      
+
       {/* --- HEADER SECTION --- */}
       <header className="flex justify-between items-center">
         <div>
@@ -54,7 +55,7 @@ export default function DashboardPage() {
               <Wallet className="w-6 h-6 text-white" />
             </div>
           </div>
-          
+
           <div className="mt-6 flex flex-col gap-3">
             <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 text-white border-none backdrop-blur-sm">
               Withdraw
@@ -111,23 +112,26 @@ export default function DashboardPage() {
         </Card>
 
         {/* Task Card 2: Text Analysis */}
-        <Card className="hover:bg-accent/50 transition-colors cursor-pointer active:scale-95 duration-200">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <span className="text-xl">📝</span>
+        <Link href={'/app/tasks/text'}>
+
+          <Card className="hover:bg-accent/50 transition-colors cursor-pointer active:scale-95 duration-200">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <span className="text-xl">📝</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Sentiment Analysis</h4>
+                  <p className="text-xs text-muted-foreground">Is this comment happy?</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold">Sentiment Analysis</h4>
-                <p className="text-xs text-muted-foreground">Is this comment happy?</p>
+              <div className="text-right">
+                <div className="font-bold text-primary">0.02 TON</div>
+                <Badge variant="secondary" className="text-[10px] h-5 px-1">~30 sec</Badge>
               </div>
-            </div>
-            <div className="text-right">
-              <div className="font-bold text-primary">0.02 TON</div>
-              <Badge variant="secondary" className="text-[10px] h-5 px-1">~30 sec</Badge>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Link>
 
       </section>
 
