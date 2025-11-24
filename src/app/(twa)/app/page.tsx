@@ -25,7 +25,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-4 space-y-6 pb-20">
+    <div className="p-4 space-y-6 pb-20 max-w-xl mx-auto">
       
       {/* --- HEADER SECTION --- */}
       <header className="flex justify-between items-center">
@@ -55,7 +55,7 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div className="mt-6 flex gap-3">
+          <div className="mt-6 flex flex-col gap-3">
             <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 text-white border-none backdrop-blur-sm">
               Withdraw
             </Button>
