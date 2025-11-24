@@ -1,25 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ThumbsUp, ThumbsDown, AlertCircle, ArrowLeft } from "lucide-react";
+import { toast } from "sonner"; // <--- 1. Import toast
 
-// 1. Define the shape of a Task
 type Task = {
     id: string;
     type: "sentiment";
-    content: string; // The text to be labeled
+    content: string; 
     reward: number;
 };
 
 export default function TextLabelingPage() {
     const router = useRouter();
 
-    // 2. Mock Data (In reality, this comes from your API)
     const [tasks, setTasks] = useState<Task[]>([
         { id: "1", type: "sentiment", content: "I absolutely loved the service! Fast and friendly.", reward: 0.02 },
         { id: "2", type: "sentiment", content: "The package arrived damaged and late. Very disappointed.", reward: 0.02 },
@@ -27,36 +26,42 @@ export default function TextLabelingPage() {
     ]);
 
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [completedCount, setCompletedCount] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
 
     const currentTask = tasks[currentIndex];
 
-    // 3. Handle Submission
     const handleVote = (sentiment: "positive" | "negative" | "neutral") => {
         if (!currentTask) return;
 
         setIsAnimating(true);
 
-        // Simulate API Call
-        console.log(`Task ${currentTask.id} labeled as: ${sentiment}`);
+        // Optional: Quick feedback toast (comment out if you prefer silence until the end)
+        // toast.info(`Labeled as ${sentiment}`, { duration: 1000, position: "bottom-center" });
 
-        // Wait for animation, then switch to next task
         setTimeout(() => {
-            setCompletedCount((prev) => prev + 1);
-
+            
             if (currentIndex < tasks.length - 1) {
+                // Move to next task
                 setCurrentIndex((prev) => prev + 1);
+                setIsAnimating(false);
             } else {
-                // No more tasks
-                alert("Batch complete! Money added to wallet.");
-                router.push("/"); // Go back to dashboard
+                // --- 2. SUCCESS TOAST ---
+                // Replaced alert() with a rich notification
+                toast.success("Batch Complete!", {
+                    description: "0.06 TON has been added to your wallet.",
+                    duration: 4000, // stays visible for 4 seconds
+                    action: {
+                        label: "View Wallet",
+                        onClick: () => router.push("/app"),
+                    },
+                });
+                
+                // Redirect to dashboard
+                router.push("/app");
             }
-            setIsAnimating(false);
-        }, 300); // 300ms delay for UX feel
+        }, 300); 
     };
 
-    // 4. Progress Calculation
     const progress = ((currentIndex) / tasks.length) * 100;
 
     return (
@@ -77,10 +82,8 @@ export default function TextLabelingPage() {
                 </Badge>
             </div>
 
-            {/* Progress Bar */}
             <Progress value={progress} className="h-1 mb-6" />
 
-            {/* Main Content Area */}
             <div className="flex-1 flex items-center justify-center pb-20">
                 {currentTask ? (
                     <Card className={`w-full border-2 transition-all duration-300 ${isAnimating ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
@@ -102,11 +105,11 @@ export default function TextLabelingPage() {
                 )}
             </div>
 
-            {/* Action Buttons (Sticky Bottom) */}
+            {/* Action Buttons */}
             <div className="grid grid-cols-3 gap-4 mb-4">
                 <Button
                     variant="outline"
-                    className="h-16 flex flex-col border-red-200 hover:bg-red-50 hover:border-red-500 dark:border-red-900 dark:hover:bg-red-900/30"
+                    className="h-16 flex flex-col border-red-200 hover:bg-red-50 hover:border-red-500 dark:border-red-900 dark:hover:bg-red-900/30 transition-colors"
                     onClick={() => handleVote("negative")}
                 >
                     <ThumbsDown className="w-6 h-6 text-red-500 mb-1" />
@@ -115,7 +118,7 @@ export default function TextLabelingPage() {
 
                 <Button
                     variant="outline"
-                    className="h-16 flex flex-col border-gray-200 hover:bg-gray-50 dark:border-gray-700"
+                    className="h-16 flex flex-col border-gray-200 hover:bg-gray-50 dark:border-gray-700 transition-colors"
                     onClick={() => handleVote("neutral")}
                 >
                     <AlertCircle className="w-6 h-6 text-gray-500 mb-1" />
@@ -124,7 +127,7 @@ export default function TextLabelingPage() {
 
                 <Button
                     variant="outline"
-                    className="h-16 flex flex-col border-green-200 hover:bg-green-50 hover:border-green-500 dark:border-green-900 dark:hover:bg-green-900/30"
+                    className="h-16 flex flex-col border-green-200 hover:bg-green-50 hover:border-green-500 dark:border-green-900 dark:hover:bg-green-900/30 transition-colors"
                     onClick={() => handleVote("positive")}
                 >
                     <ThumbsUp className="w-6 h-6 text-green-500 mb-1" />

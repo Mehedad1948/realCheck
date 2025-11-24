@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from '@/components/ui/button';
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2, XCircle, Coins } from "lucide-react"; // Icon library
+import Link from 'next/link';
 
 // REPLACE WITH YOUR NGROK URL
 const BACKEND_URL = "https://YOUR-NGROK-URL.ngrok-free.app";
@@ -127,6 +128,14 @@ export default function Home() {
             </CardFooter>
           </Card>
         )}
+      </div>
+
+      <div className=' mt-4 w-full max-w-md mx-auto'>
+        <Link className='w-full' href={'/app'}>
+          <Button variant={'secondary'} className='w-full'>
+            App
+          </Button>
+        </Link>
       </div>
     </main>
   );
