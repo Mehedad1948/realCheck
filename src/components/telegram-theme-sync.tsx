@@ -7,23 +7,26 @@ export function TelegramThemeSync() {
   const { setTheme } = useTheme();
 
   useEffect(() => {
-    // Check if running inside Telegram
+    // Ensure we are running in the browser
     if (typeof window !== "undefined" && window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       
-      // 1. Signal Telegram we are ready
+      // 1. Notify Telegram the app is ready
       tg.ready();
-      tg.expand(); // Optional: expands to full height
+      tg.expand(); // Optional: Opens the app to full height
 
-      // 2. Set initial theme based on Telegram
-      setTheme(tg.colorScheme); // 'light' or 'dark'
+      // 2. Force the Next.js theme to match Telegram's color scheme (light/dark)
+      if (tg.colorScheme) {
+        setTheme(tg.colorScheme);
+      }
 
-      // 3. Set the Header Color to match the background (immersiveness)
-      // This makes the top status bar blend in perfectly
-      tg.setHeaderColor(tg.themeParams.bg_color || "#ffffff");
-      tg.setBackgroundColor(tg.themeParams.bg_color || "#ffffff");
+      // 3. Set the Telegram Header Color to match your background
+      // This removes the awkward bar at the top
+      const bgColor = tg.themeParams.bg_color || "#ffffff";
+      tg.setHeaderColor(bgColor);
+      tg.setBackgroundColor(bgColor);
 
-      // 4. Listen for dynamic changes (if user changes theme while app is open)
+      // 4. Listen for theme changes (if user switches day/night mode inside app)
       tg.onEvent("themeChanged", () => {
         setTheme(tg.colorScheme);
         tg.setHeaderColor(tg.themeParams.bg_color || "#ffffff");
@@ -32,5 +35,5 @@ export function TelegramThemeSync() {
     }
   }, [setTheme]);
 
-  return null; // This component renders nothing visually
+  return null;
 }

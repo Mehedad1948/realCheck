@@ -1,5 +1,5 @@
-// app/(twa)/layout.tsx
-import { TelegramThemeSync } from "@/components/telegram-theme-sync"; // <--- Import this
+import "../../globals.css"; // <--- CRITICAL: You must import your CSS here!
+import { TelegramThemeSync } from "@/components/telegram-theme-sync";
 import { ThemeProvider } from 'next-themes';
 
 export const viewport = {
@@ -11,20 +11,24 @@ export const viewport = {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
+    /* 
+      suppressHydrationWarning is needed because next-themes 
+      modifies the HTML tag attributes 
+    */
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Load the script early */}
         <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
       </head>
-      <body className="bg-background text-foreground">
-        {/* 
-           The ThemeProvider must wrap the Sync component 
-           so useTheme() has context to work with.
-        */}
+      <body className="bg-background text-foreground antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
            
-           <TelegramThemeSync /> {/* <--- PLACE IT HERE */}
+           {/* This component handles the logic */}
+           <TelegramThemeSync /> 
            
-           {children}
+           <main className="min-h-screen w-full">
+             {children}
+           </main>
         
         </ThemeProvider>
       </body>
