@@ -1,0 +1,50 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // or "sqlite" for local dev
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  telegramId   BigInt   @unique
+  username     String?
+  firstName    String?
+  balance      Float    @default(0.0)
+  reputation   Float    @default(100.0) // Accuracy score
+  createdAt    DateTime @default(now())
+  
+  votes        Vote[]
+}
+
+model Task {
+  id            String   @id @default(cuid())
+  type          String   // "text" or "image"
+  question      String
+  content       String?  // For text tasks
+  imageUrls     String[] // For image tasks
+  options       String[]
+  correctAnswer String?  // If it's a validation task (honeypot)
+  isValidation  Boolean  @default(false)
+  reward        Float    @default(0.05)
+  
+  votes         Vote[]
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  userId    String
+  taskId    String
+  selection String
+  isCorrect Boolean? // Only populated for validation tasks
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  task      Task     @relation(fields: [taskId], references: [id])
+
+  @@unique([userId, taskId]) // Prevent double voting
+}
