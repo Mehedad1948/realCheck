@@ -1,8 +1,6 @@
 // src/app/api/bot/route.ts
 import { Bot, webhookCallback } from "grammy";
 
-export const dynamic = 'force-dynamic';
-
 export const POST = async (req: Request) => {
     // 1. Read token inside the request, not at the top level
     const token = process.env.BOT_TOKEN;
