@@ -71,7 +71,6 @@ export default function TextLabelingPage() {
                         toast.success("Batch Complete!", {
                             description: "Reward has been added to your wallet.", // You can use result.reward here if your action returns it
                             duration: 4000,
-                            t
                             action: {
                                 label: "View Wallet",
                                 onClick: () => router.push("/app"),
