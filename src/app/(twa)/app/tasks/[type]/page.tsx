@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,28 +13,35 @@ import { Task } from '@/lib/types/tasks';
 
 export default function TextLabelingPage() {
     const router = useRouter();
-
+    const params = useParams()
     const [tasks, setTasks] = useState<Task[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
 
     const currentTask = tasks[currentIndex];
-    
+
     // Calculate progress safely
     const progress = tasks.length > 0 ? ((currentIndex) / tasks.length) * 100 : 0;
 
     useEffect(() => {
         const loadTasks = async () => {
             try {
-                const data = await getTasks();
-                
+                const typeParam = params.type;
+
+
+                const taskType = (typeParam === 'image')
+                    ? 'image_labeling'
+                    : 'text_classification';
+
+                const data = await getTasks(taskType);
+
                 // SAFETY CHECK: Ensure we received an Array
                 if (Array.isArray(data)) {
                     setTasks(data);
                 } else {
                     console.error("Data format error: Expected array, got", data);
-                    setTasks([]); 
+                    setTasks([]);
                 }
             } catch (error) {
                 console.error(error);

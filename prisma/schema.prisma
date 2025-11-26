@@ -22,16 +22,23 @@ model User {
 }
 
 model Task {
-  id            String   @id @default(cuid())
-  type          String   // "text" or "image"
+  id            String   @id @default(uuid())
+  // We use String for type to allow flexibility, or you can use an Enum
+  type          String   
   question      String
-  content       String?  // For text tasks
-  imageUrls     String[] // For image tasks
-  options       String[]
-  correctAnswer String?  // If it's a validation task (honeypot)
-  isValidation  Boolean  @default(false)
-  reward        Float    @default(0.05)
+  options       String[] // Required for Postgres
+  reward        Int
+  correctAnswer String?  @map("correct_answer") // Maps camelCase JS to snake_case DB
   
+  // --- NEW FIELDS TO MATCH YOUR TYPE ---
+  textContent   String?  @map("text_content")   // Optional: matches text_content
+  imageUrls     String[] @map("image_urls")     // Optional: matches image_urls
+  isValidation  Boolean  @default(false) @map("is_validation")
+  
+  // (Old generic content field - you can remove this if you don't use it anymore)
+  // content    Json?
+
+  createdAt     DateTime @default(now())
   votes         Vote[]
 }
 

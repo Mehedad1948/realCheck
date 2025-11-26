@@ -1,46 +1,36 @@
-// app/actions/tasks.ts
 'use server'
 
-import { Task } from '@/lib/types/tasks'; // Ensure this path matches your file structure
+import { prisma } from '@/lib/prisma'
+import { Task } from '@/lib/types/tasks'
 
-// Mock Data
-const MOCK_TASKS: Task[] = [
-    {
-        id: "t1",
-        type: "text_classification",
-        question: "Is this review positive?",
-        text_content: "The product broke after two days. Terrible quality.",
-        options: ["Positive", "Negative"],
-        reward: 0.05,
-        is_validation: false
-    },
-    {
-        id: "t2",
-        type: "image_labeling",
-        question: "Select the object in the image",
-        image_urls: ["https://dummyimage.com/600x400/000/fff&text=Cat+Image"],
-        options: ["Car", "Cat", "Building"],
-        reward: 0.1,
-        is_validation: false
-    },
-    {
-        id: "v1", 
-        type: "text_classification",
-        question: "What is 2 + 2?",
-        text_content: "Simple math check.",
-        options: ["3", "4", "5"],
-        reward: 0.00,
-        is_validation: true,
-        correct_answer: "4"
-    }
-];
+export async function getTasks(taskType: 'text_classification' | 'image_labeling'): Promise<Task[]> {
+  try {
+    const dbTasks = await prisma.task.findMany({
+      where: { 
+        type: taskType // Matches the string stored in DB
+      },
+      take: 20, // Limit to 20 tasks for now
+    })
 
-// --- CHANGED: Return Task[] (Array) instead of Task (Single) ---
-export async function getTasks(userId?: string): Promise<Task[]> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Return the full batch so the UI can iterate through them
-    return MOCK_TASKS;
+    // MAP Database Fields -> Frontend Interface
+    const tasks: Task[] = dbTasks.map((t) => ({
+      id: t.id,
+      // Force cast because we know our DB string matches the TS type
+      type: t.type as 'text_classification' | 'image_labeling', 
+      question: t.question,
+      options: t.options,
+      reward: t.reward,
+      
+      // Mapping camelCase (DB) to snake_case (Frontend)
+      text_content: t.textContent || undefined,
+      image_urls: t.imageUrls.length > 0 ? t.imageUrls : undefined,
+      is_validation: t.isValidation,
+      correct_answer: t.correctAnswer || undefined,
+    }))
+
+    return tasks
+  } catch (error) {
+    console.error("Error fetching tasks:", error)
+    return []
+  }
 }
-
