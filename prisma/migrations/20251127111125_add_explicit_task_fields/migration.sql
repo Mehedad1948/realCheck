@@ -16,12 +16,13 @@ CREATE TABLE "Task" (
     "id" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "question" TEXT NOT NULL,
-    "content" TEXT,
-    "imageUrls" TEXT[],
     "options" TEXT[],
-    "correctAnswer" TEXT,
-    "isValidation" BOOLEAN NOT NULL DEFAULT false,
-    "reward" DOUBLE PRECISION NOT NULL DEFAULT 0.05,
+    "reward" INTEGER NOT NULL,
+    "correct_answer" TEXT,
+    "text_content" TEXT,
+    "image_urls" TEXT[],
+    "is_validation" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
 );
