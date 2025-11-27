@@ -19,7 +19,7 @@ CREATE TABLE "Task" (
     "options" TEXT[],
     "reward" INTEGER NOT NULL,
     "correct_answer" TEXT,
-    "text_content" TEXT,
+    "textContent" TEXT,
     "image_urls" TEXT[],
     "is_validation" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

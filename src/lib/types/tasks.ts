@@ -5,7 +5,7 @@ export interface Task {
     question: string;
     
     // New Separated Content Fields
-    text_content?: string;       // Optional: for text tasks
+    textContent?: string;       // Optional: for text tasks
     image_urls?: string[];       // Optional: array allows for carousels or single images
     
     options: string[]; 

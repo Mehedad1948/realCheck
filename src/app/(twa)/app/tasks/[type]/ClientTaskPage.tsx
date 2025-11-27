@@ -113,11 +113,11 @@ export default function ClientTaskPage() {
         }
 
         // Text Logic
-        if (currentTask.text_content) {
+        if (currentTask.textContent) {
             return (
                 <div className="bg-secondary/30 p-6 rounded-lg border border-border">
                     <p className="text-lg font-medium leading-relaxed text-foreground">
-                        &ldquo;{currentTask.text_content}&ldquo;
+                        &ldquo;{currentTask.textContent}&ldquo;
                     </p>
                 </div>
             );
