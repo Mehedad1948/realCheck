@@ -22,7 +22,7 @@ export async function getTasks(taskType: 'text_classification' | 'image_labeling
       reward: t.reward,
       
       // Mapping camelCase (DB) to snake_case (Frontend)
-      textContent: t.textContent || undefined,
+      textContent: t.text_content || undefined,
       image_urls: t.imageUrls.length > 0 ? t.imageUrls : undefined,
       is_validation: t.isValidation,
       correct_answer: t.correctAnswer || undefined,
