@@ -31,7 +31,7 @@ model Task {
   correctAnswer String?  @map("correct_answer") // Maps camelCase JS to snake_case DB
   
   // --- NEW FIELDS TO MATCH YOUR TYPE ---
-  text_content   String?  @map("textContent")   // Optional: matches textContent
+  text_content   String?  @map("text_content")   // Optional: matches textContent
   imageUrls     String[] @map("image_urls")     // Optional: matches image_urls
   isValidation  Boolean  @default(false) @map("is_validation")
   
