@@ -1,19 +1,23 @@
 import { ReactNode } from 'react';
 import Sidebar from './Sidebar';
 import { Menu } from 'lucide-react'; // Mobile menu icon
+import ThemeToggle from '@/components/ui/ThemeToggle.tsx';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
     return (
-        <div className="min-h-screen bg-slate-50/50">
+        <div className="min-h-screen ">
+            <ThemeToggle />
             {/* Sidebar - Hidden on Mobile, Visible on Desktop */}
             <Sidebar />
 
             {/* Mobile Header */}
-            <header className="sticky top-0 z-20 flex h-16 items-center border-b bg-white px-4 sm:hidden">
+            <header className="sticky top-0 z-20 flex h-16 items-center border-b  px-4 sm:hidden">
                 <button className="mr-4 text-slate-500">
                     <Menu className="h-6 w-6" />
                 </button>
                 <span className="font-bold text-lg">DataLabeler</span>
+                <span className='grow'></span>
+
             </header>
 
             {/* Main Content Area - Padded Left on Desktop */}

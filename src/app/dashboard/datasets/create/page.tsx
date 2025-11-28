@@ -29,14 +29,19 @@ export default function CreateDatasetPage() {
     setLoading(true);
 
     const cleanOptions = options.filter(opt => opt.trim() !== '');
+    // ⚠️ HARDCODED CLIENT ID FOR TESTING
     const MOCK_CLIENT_ID = "cmiis4nn200017yfjmvhkre56"; 
 
     try {
       const result = await createDataset({
         title, description, dataType, question, options: cleanOptions, clientId: MOCK_CLIENT_ID, 
       });
-      if (result.success) router.push(`/client/dashboard/datasets/${result.datasetId}/upload`);
-      else alert("Error: " + result.error);
+
+      if (result.success) {
+        router.push(`/client/dashboard/datasets/${result.datasetId}/upload`);
+      } else {
+        alert("Error: " + result.error);
+      }
     } catch (err) {
       alert("Unexpected error");
     } finally {
@@ -45,31 +50,30 @@ export default function CreateDatasetPage() {
   };
 
   return (
-    // Main container uses theme background
-    <div className="bg-theme-bg min-h-screen text-theme-text p-4 md:p-6">
+    <div className="bg-background min-h-screen p-4 md:p-6 transition-colors duration-300">
       
       <div className="max-w-3xl mx-auto mb-8">
-        <h1 className="text-2xl font-bold text-theme-text">Create New Dataset</h1>
-        <p className="text-theme-hint mt-1">Define the template for your data labeling task.</p>
+        <h1 className="text-2xl font-bold text-foreground">Create New Dataset</h1>
+        <p className="text-muted-foreground mt-1">Define the template for your data labeling task.</p>
       </div>
 
       <form 
         onSubmit={handleSubmit} 
-        className="space-y-8 rounded-xl max-w-3xl p-6 border border-theme-hint/20 shadow-sm bg-theme-bg"
+        className="space-y-8 rounded-xl max-w-3xl p-6 border border-border shadow-sm bg-card"
       >
         
         {/* 1. General Info */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-theme-text border-b border-theme-hint/20 pb-2">
+          <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
             1. General Details
           </h3>
           
           <div>
-            <label className="block text-sm font-medium text-theme-hint mb-1">Dataset Title</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Dataset Title</label>
             <input 
               type="text" 
               required
-              className="w-full p-2 bg-transparent border border-theme-hint/30 rounded-md focus:ring-2 focus:ring-theme-button focus:border-transparent outline-none text-theme-text placeholder-theme-hint/50"
+              className="w-full p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground placeholder-muted-foreground/50 transition-all"
               placeholder="e.g. Shoe Sentiment Analysis"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -77,11 +81,11 @@ export default function CreateDatasetPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-theme-hint mb-1">Instructions</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Instructions</label>
             <textarea 
               required
               rows={3}
-              className="w-full p-2 bg-transparent border border-theme-hint/30 rounded-md focus:ring-2 focus:ring-theme-button focus:border-transparent outline-none text-theme-text placeholder-theme-hint/50"
+              className="w-full p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground placeholder-muted-foreground/50 transition-all"
               placeholder="Briefly explain what the worker needs to do..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -91,7 +95,7 @@ export default function CreateDatasetPage() {
 
         {/* 2. Data Type Configuration */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-theme-text border-b border-theme-hint/20 pb-2">
+          <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
             2. Task Configuration
           </h3>
           
@@ -101,10 +105,8 @@ export default function CreateDatasetPage() {
               onClick={() => setDataType('TEXT')}
               className={`p-4 border rounded-lg text-center transition-all ${
                 dataType === 'TEXT' 
-                  // Active State: Uses Theme Button Color
-                  ? 'border-theme-button bg-theme-button/10 text-theme-button font-bold ring-2 ring-theme-button' 
-                  // Inactive State: Uses Hint Color
-                  : 'border-theme-hint/30 hover:border-theme-hint text-theme-hint'
+                  ? 'border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary' 
+                  : 'border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground'
               }`}
             >
               📝 Text Analysis
@@ -114,8 +116,8 @@ export default function CreateDatasetPage() {
               onClick={() => setDataType('IMAGE')}
               className={`p-4 border rounded-lg text-center transition-all ${
                 dataType === 'IMAGE' 
-                  ? 'border-theme-button bg-theme-button/10 text-theme-button font-bold ring-2 ring-theme-button' 
-                  : 'border-theme-hint/30 hover:border-theme-hint text-theme-hint'
+                  ? 'border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary' 
+                  : 'border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground'
               }`}
             >
               🖼️ Image Labeling
@@ -123,11 +125,11 @@ export default function CreateDatasetPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-theme-hint mb-1">Question</label>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Question</label>
             <input 
               type="text" 
               required
-              className="w-full p-2 bg-transparent border border-theme-hint/30 rounded-md focus:ring-2 focus:ring-theme-button focus:border-transparent outline-none text-theme-text placeholder-theme-hint/50"
+              className="w-full p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground placeholder-muted-foreground/50 transition-all"
               placeholder={dataType === 'TEXT' ? "e.g. Is this sentiment positive?" : "e.g. What object is in this image?"}
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
@@ -137,18 +139,18 @@ export default function CreateDatasetPage() {
 
         {/* 3. Define Options */}
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-theme-text border-b border-theme-hint/20 pb-2">
+          <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
             3. Answer Options
           </h3>
-          <p className="text-sm text-theme-hint">Define the choices workers can select from.</p>
+          <p className="text-sm text-muted-foreground">Define the choices workers can select from.</p>
 
           {options.map((opt, idx) => (
             <div key={idx} className="flex gap-2 items-center">
-              <span className="text-theme-hint text-sm font-mono w-6">{idx + 1}.</span>
+              <span className="text-muted-foreground text-sm font-mono w-6">{idx + 1}.</span>
               <input 
                 type="text" 
                 required
-                className="flex-1 p-2 bg-transparent border border-theme-hint/30 rounded-md focus:ring-2 focus:ring-theme-button focus:border-transparent outline-none text-theme-text placeholder-theme-hint/50"
+                className="flex-1 p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground placeholder-muted-foreground/50 transition-all"
                 placeholder={`Option ${idx + 1}`}
                 value={opt}
                 onChange={(e) => handleOptionChange(idx, e.target.value)}
@@ -157,7 +159,7 @@ export default function CreateDatasetPage() {
                 <button 
                   type="button" 
                   onClick={() => removeOption(idx)}
-                  className="text-red-400 hover:text-red-600 p-2"
+                  className="text-destructive hover:text-destructive/80 p-2 transition-colors"
                   title="Remove option"
                 >
                   ✕
@@ -169,19 +171,18 @@ export default function CreateDatasetPage() {
           <button 
             type="button"
             onClick={addOption}
-            className="text-sm text-theme-link hover:brightness-110 font-medium flex items-center gap-1 mt-2"
+            className="text-sm text-primary hover:brightness-110 font-medium flex items-center gap-1 mt-2 transition-all"
           >
             + Add another option
           </button>
         </div>
 
         {/* Submit Button */}
-        <div className="pt-6 border-t border-theme-hint/20">
+        <div className="pt-6 border-t border-border">
           <button 
             type="submit" 
             disabled={loading}
-            // Uses standard Telegram Button variables
-            className="w-full bg-theme-button text-theme-button-text py-3 rounded-lg font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {loading ? 'Creating Dataset...' : 'Create Dataset & Continue to Upload →'}
           </button>
