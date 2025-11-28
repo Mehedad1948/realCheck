@@ -13,7 +13,6 @@ import { toast } from "sonner";
 
 export default function ClientTaskPage({ tasks }: { tasks: Task[] }) {
     const router = useRouter();
-    const params = useParams()
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
 
