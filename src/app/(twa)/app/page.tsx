@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -15,6 +13,8 @@ import {
   ArrowRight
 } from "lucide-react";
 import Link from 'next/link';
+import { Suspense } from 'react';
+import DatasetList from './AcailableJobs';
 
 export default function DashboardPage() {
   // MOCK DATA: In the future, these will come from your backend API
@@ -91,48 +91,16 @@ export default function DashboardPage() {
           <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500" />
           Available Tasks
         </h3>
+        <Suspense fallback={
+          <div className='flex flex-col gap-3'>
+            {Array.from({ length: 3 }).map((item, index) =>
+              <div key={index} className='w-full h-28 rounded-xl border bg-gray-100 animate-pulse'></div>)
+            }
+          </div>
+        }>
+          <DatasetList />
+        </Suspense>
 
-        {/* Task Card 1: Image Labeling */}
-        <Link className='mb-4 block' href={'/app/tasks/image'}>
-          <Card className="hover:bg-accent/50 transition-colors cursor-pointer active:scale-95 duration-200">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  <span className="text-xl">🖼️</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Image Bounding Box</h4>
-                  <p className="text-xs text-muted-foreground">Draw boxes around cars</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-bold text-primary">0.05 TON</div>
-                <Badge variant="secondary" className="text-[10px] h-5 px-1">~2 min</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* Task Card 2: Text Analysis */}
-        <Link href={'/app/tasks/text'}>
-          <Card className="hover:bg-accent/50 transition-colors cursor-pointer active:scale-95 duration-200">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <span className="text-xl">📝</span>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Sentiment Analysis</h4>
-                  <p className="text-xs text-muted-foreground">Is this comment happy?</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-bold text-primary">0.02 TON</div>
-                <Badge variant="secondary" className="text-[10px] h-5 px-1">~30 sec</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
 
       </section>
 

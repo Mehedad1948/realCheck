@@ -5,41 +5,83 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // or "sqlite" for local dev
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
+// ==========================================
+// 1. THE CLIENT (The Business who pays you)
+// ==========================================
+model Client {
   id           String   @id @default(cuid())
-  telegramId   BigInt   @unique
-  username     String?
-  firstName    String?
-  balance      Float    @default(0.0)
-  reputation   Float    @default(100.0) // Accuracy score
+  companyName  String
+  email        String   @unique // Used for Web Dashboard Login
+  passwordHash String?  // If you add password login later
+  contactName  String?
+
+  datasets     Dataset[] // A client owns multiple datasets
+
   createdAt    DateTime @default(now())
-  
-  votes        Vote[]
 }
 
+// ==========================================
+// 2. THE DATA ( The Orders)
+// ==========================================
+model Dataset {
+  id          String   @id @default(cuid())
+  title       String   // e.g. "Nike - Shoe Sentiment Analysis"
+  description       String   // e.g. "Nike - Shoe Sentiment Analysis"
+  status      String   @default("ACTIVE") // ACTIVE, PAUSED, COMPLETED
+  
+  // Link to the Client who ordered this
+  clientId    String   
+  client      Client   @relation(fields: [clientId], references: [id])
+  
+  tasks       Task[]   
+  
+  createdAt   DateTime @default(now())
+}
+
+// ==========================================
+// 3. THE WORKER (The App User)
+// ==========================================
+// We keep this named "User" so your existing Next.js code doesn't break.
+// But conceptually, this is the "Worker".
+model User {
+  id           String   @id @default(cuid())
+  telegramId   String   @unique 
+  username     String?
+  balance      Float    @default(0.0)
+  reputation   Float    @default(100.0) 
+  
+  votes        Vote[]
+  
+  createdAt    DateTime @default(now())
+}
+
+// ==========================================
+// 4. TASKS & VOTES
+// ==========================================
 model Task {
   id            String   @id @default(uuid())
-  // We use String for type to allow flexibility, or you can use an Enum
+  datasetId     String
+  dataset       Dataset  @relation(fields: [datasetId], references: [id])
+
   type          String   
   question      String
-  options       String[] // Required for Postgres
+  options       String[] 
   reward        Int
-  correctAnswer String?  @map("correct_answer") // Maps camelCase JS to snake_case DB
   
-  // --- NEW FIELDS TO MATCH YOUR TYPE ---
-  text_content   String?  @map("text_content")   // Optional: matches textContent
-  imageUrls     String[] @map("image_urls")     // Optional: matches image_urls
+  // Content
+  textContent  String?  @map("text_content")
+  imageUrls     String[] @map("image_urls")
+  
+  // Validation
+  correctAnswer String?  @map("correct_answer")
   isValidation  Boolean  @default(false) @map("is_validation")
-  
-  // (Old generic content field - you can remove this if you don't use it anymore)
-  // content    Json?
 
-  createdAt     DateTime @default(now())
   votes         Vote[]
+  createdAt     DateTime @default(now())
 }
 
 model Vote {
@@ -47,11 +89,10 @@ model Vote {
   userId    String
   taskId    String
   selection String
-  isCorrect Boolean? // Only populated for validation tasks
-  createdAt DateTime @default(now())
+  isCorrect Boolean? 
 
   user      User     @relation(fields: [userId], references: [id])
   task      Task     @relation(fields: [taskId], references: [id])
 
-  @@unique([userId, taskId]) // Prevent double voting
+  @@unique([userId, taskId]) 
 }

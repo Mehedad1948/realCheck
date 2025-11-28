@@ -1,21 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { submitVote } from '@/app/actions/tasks'; // Ensure this path is correct
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
-import { getTasks, submitVote } from '@/app/actions/tasks'; // Ensure this path is correct
 import { Task } from '@/lib/types/tasks';
+import { ArrowLeft } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 
-export default function ClientTaskPage() {
+export default function ClientTaskPage({ tasks }: { tasks: Task[] }) {
     const router = useRouter();
     const params = useParams()
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
 
@@ -24,35 +22,6 @@ export default function ClientTaskPage() {
     // Calculate progress safely
     const progress = tasks.length > 0 ? ((currentIndex) / tasks.length) * 100 : 0;
 
-    useEffect(() => {
-        const loadTasks = async () => {
-            try {
-                const typeParam = params.type;
-
-
-                const taskType = (typeParam === 'image')
-                    ? 'image_labeling'
-                    : 'text_classification';
-
-                const data = await getTasks(taskType);
-
-                // SAFETY CHECK: Ensure we received an Array
-                if (Array.isArray(data)) {
-                    setTasks(data);
-                } else {
-                    console.error("Data format error: Expected array, got", data);
-                    setTasks([]);
-                }
-            } catch (error) {
-                console.error(error);
-                toast.error("Failed to load tasks.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadTasks();
-    }, []);
 
     const handleVote = async (selectedOption: string) => {
         if (!currentTask) return;
@@ -96,10 +65,10 @@ export default function ClientTaskPage() {
         if (!currentTask) return null;
 
         // Image Logic
-        if (currentTask.image_urls && currentTask.image_urls.length > 0) {
+        if (currentTask.imageUrls && currentTask.imageUrls.length > 0) {
             return (
                 <div className="space-y-4">
-                    {currentTask.image_urls.map((url, idx) => (
+                    {currentTask.imageUrls.map((url, idx) => (
                         <div key={idx} className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
                             <img
                                 src={url}
@@ -126,14 +95,6 @@ export default function ClientTaskPage() {
         return <div className="text-muted-foreground italic">Content missing...</div>;
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex flex-col h-screen items-center justify-center space-y-4">
-                <Loader2 className="animate-spin h-8 w-8 text-primary" />
-                <p className="text-muted-foreground">Loading tasks...</p>
-            </div>
-        );
-    }
 
     if (tasks.length === 0) {
         return (
@@ -145,6 +106,8 @@ export default function ClientTaskPage() {
             </div>
         );
     }
+
+    console.log('✅✅', currentTask);
 
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto p-4 gap-4">
