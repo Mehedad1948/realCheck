@@ -30,8 +30,14 @@ model Client {
 model Dataset {
   id          String   @id @default(cuid())
   title       String   // e.g. "Nike - Shoe Sentiment Analysis"
-  description       String   // e.g. "Nike - Shoe Sentiment Analysis"
+  description String   // e.g. "Select Positive if the user sounds happy."
   status      String   @default("ACTIVE") // ACTIVE, PAUSED, COMPLETED
+  
+  // --- TEMPLATE CONFIG (Moved from Task) ---
+  dataType    String   // TEXT or IMAGE
+  question    String   // "Is this sentiment positive?"
+  options     String[] // ["Yes", "No"] (Empty if text input)
+  reward      Int      @default(50) // Base reward for all tasks in this set
   
   // Link to the Client who ordered this
   clientId    String   
@@ -41,6 +47,7 @@ model Dataset {
   
   createdAt   DateTime @default(now())
 }
+
 
 // ==========================================
 // 3. THE WORKER (The App User)
@@ -67,16 +74,11 @@ model Task {
   datasetId     String
   dataset       Dataset  @relation(fields: [datasetId], references: [id])
 
-  type          String   
-  question      String
-  options       String[] 
-  reward        Int
-  
-  // Content
-  textContent  String?  @map("text_content")
+  // --- CONTENT ONLY (Specific to this single task) ---
+  textContent   String?  @map("text_content")
   imageUrls     String[] @map("image_urls")
   
-  // Validation
+  // Validation (Golden Data)
   correctAnswer String?  @map("correct_answer")
   isValidation  Boolean  @default(false) @map("is_validation")
 

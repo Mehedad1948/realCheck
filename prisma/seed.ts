@@ -3,10 +3,10 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting Database Seeding...');
+  console.log('🌱 Starting Database Seeding (Professional Schema)...');
 
   // -------------------------------------------------------
-  // 1. Clean up existing data (Optional, prevents duplicates)
+  // 1. Clean up existing data
   // -------------------------------------------------------
   await prisma.vote.deleteMany();
   await prisma.task.deleteMany();
@@ -20,7 +20,7 @@ async function main() {
   // -------------------------------------------------------
   const devUser = await prisma.user.create({
     data: {
-      telegramId: "dev_user_123", // Use this ID for local testing
+      telegramId: "dev_user_123", 
       username: "DevWorker",
       balance: 0,
       reputation: 100,
@@ -29,7 +29,7 @@ async function main() {
   console.log(`👤 Created Dev User: ${devUser.username}`);
 
   // -------------------------------------------------------
-  // 3. Create Client 1: "TechCorp Inc" (Text Focus)
+  // 3. Create Client 1: "TechCorp Inc"
   // -------------------------------------------------------
   const clientTech = await prisma.client.create({
     data: {
@@ -39,49 +39,80 @@ async function main() {
     }
   });
 
-  // --- DATASET 1: Text Labeling (Sentiment) ---
-  const textDataset = await prisma.dataset.create({
+  // --- DATASET 1: Twitter Sentiment (Text) ---
+  const sentimentDataset = await prisma.dataset.create({
     data: {
       title: "Twitter Sentiment Analysis - Q4",
-      description: "Label tweets as Positive, Negative, or Neutral.",
+      description: "Read the tweet and determine the user's mood.",
       status: "ACTIVE",
       clientId: clientTech.id,
+      
+      // SCHEMA CHANGE: Logic is now here
+      dataType: "TEXT",
+      question: "How does the user feel about the product?",
+      options: ["Positive", "Negative", "Neutral"],
+      reward: 10,
+
       tasks: {
         create: [
           {
-            type: "text",
-            question: "How does the user feel about the product?",
-            options: ["Positive", "Negative", "Neutral"],
-            reward: 10,
             textContent: "I absolutely love the new update! It fixed all the bugs.",
             isValidation: true,
-            correctAnswer: "Positive", // Validation Task
+            correctAnswer: "Positive",
           },
           {
-            type: "text",
-            question: "How does the user feel about the product?",
-            options: ["Positive", "Negative", "Neutral"],
-            reward: 10,
             textContent: "My screen freezes every time I open the app. Terrible.",
-            isValidation: false, // Regular Task
+            isValidation: false,
           },
           {
-            type: "text",
-            question: "Is this spam?",
-            options: ["Spam", "Legit"],
-            reward: 5,
-            textContent: "CLICK HERE TO WIN A FREE IPHONE NOW!!!",
-            isValidation: true,
-            correctAnswer: "Spam",
-          },
+            textContent: "It's okay, nothing special but it works.",
+            isValidation: false,
+          }
         ],
       },
     },
   });
-  console.log(`📝 Created Text Dataset with ${3} tasks.`);
+  console.log(`📝 Created Sentiment Dataset (ID: ${sentimentDataset.id})`);
+
+  // --- DATASET 2: Spam Detection (Text) ---
+  // (Previously mixed, now separate because the question is different)
+  const spamDataset = await prisma.dataset.create({
+    data: {
+      title: "Email Spam Filter Training",
+      description: "Mark messages as Spam or Legit.",
+      status: "ACTIVE",
+      clientId: clientTech.id,
+
+      dataType: "TEXT",
+      question: "Is this message spam?",
+      options: ["Spam", "Legit"],
+      reward: 5,
+
+      tasks: {
+        create: [
+          {
+            textContent: "CLICK HERE TO WIN A FREE IPHONE NOW!!!",
+            isValidation: true,
+            correctAnswer: "Spam",
+          },
+          {
+            textContent: "Hey check out this link: http://sketchy-url.com",
+            isValidation: false,
+          },
+          {
+            textContent: "Meeting confirmed for Tuesday at 2pm.",
+            isValidation: true,
+            correctAnswer: "Legit",
+          }
+        ],
+      },
+    },
+  });
+  console.log(`📧 Created Spam Dataset (ID: ${spamDataset.id})`);
+
 
   // -------------------------------------------------------
-  // 4. Create Client 2: "VisionAI Labs" (Image Focus)
+  // 4. Create Client 2: "VisionAI Labs"
   // -------------------------------------------------------
   const clientVision = await prisma.client.create({
     data: {
@@ -91,38 +122,54 @@ async function main() {
     }
   });
 
-  // --- DATASET 2: Image Labeling ---
-  const imageDataset = await prisma.dataset.create({
+  // --- DATASET 3: Traffic Lights (Image) ---
+  const trafficDataset = await prisma.dataset.create({
     data: {
       title: "Autonomous Driving - Traffic Lights",
       description: "Identify the state of the traffic light.",
       status: "ACTIVE",
       clientId: clientVision.id,
+
+      dataType: "IMAGE",
+      question: "What color is the traffic light?",
+      options: ["Red", "Green", "Yellow", "Off"],
+      reward: 25,
+
       tasks: {
         create: [
           {
-            type: "image",
-            question: "What color is the traffic light?",
-            options: ["Red", "Green", "Yellow", "Off"],
-            reward: 25,
-            imageUrls: ["https://images.unsplash.com/photo-1565059895283-f6f6b3c9b444?auto=format&fit=crop&w=800"], // Red light image
+            imageUrls: ["https://images.unsplash.com/photo-1565059895283-f6f6b3c9b444?auto=format&fit=crop&w=800"], 
             isValidation: true,
             correctAnswer: "Red",
           },
           {
-            type: "image",
-            question: "Is there a pedestrian in this image?",
-            options: ["Yes", "No"],
-            reward: 20,
-            imageUrls: ["https://images.unsplash.com/photo-1556150332-16c9776874dd?auto=format&fit=crop&w=800"], // Empty street
-            isValidation: false,
-          },
+            imageUrls: ["https://images.unsplash.com/photo-1625126596963-268b92b16621?auto=format&fit=crop&w=800"], // Green light
+            isValidation: true,
+            correctAnswer: "Green",
+          }
+        ],
+      },
+    },
+  });
+  console.log(`🚦 Created Traffic Dataset (ID: ${trafficDataset.id})`);
+
+  // --- DATASET 4: Thumbnail Comparison (Image) ---
+  const thumbnailDataset = await prisma.dataset.create({
+    data: {
+      title: "YouTube Thumbnail Optimization",
+      description: "Which image makes you want to click more?",
+      status: "ACTIVE",
+      clientId: clientVision.id,
+
+      dataType: "IMAGE",
+      question: "Select the best thumbnail.",
+      options: ["Image A", "Image B"],
+      reward: 15,
+
+      tasks: {
+        create: [
           {
-            type: "image",
-            question: "Select the best thumbnail for a travel vlog.",
-            options: ["Image A", "Image B"],
-            reward: 15,
-            // Simulating multiple images for comparison
+            // Simulating comparison (Image A vs Image B)
             imageUrls: [
               "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=800", 
               "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800"
@@ -133,42 +180,7 @@ async function main() {
       },
     },
   });
-  console.log(`🖼️ Created Image Dataset with ${3} tasks.`);
-
-  // -------------------------------------------------------
-  // 5. Dataset 3: Hybrid / Mixed (Under TechCorp)
-  // -------------------------------------------------------
-  const mixedDataset = await prisma.dataset.create({
-    data: {
-      title: "General Knowledge & Visual QA",
-      description: "A mix of text and image tasks.",
-      status: "ACTIVE",
-      clientId: clientTech.id,
-      tasks: {
-        create: [
-          {
-            type: "text",
-            question: "What is the capital of France?",
-            options: ["London", "Berlin", "Paris", "Madrid"],
-            reward: 5,
-            textContent: "Geography Question #1",
-            isValidation: true,
-            correctAnswer: "Paris",
-          },
-          {
-            type: "image",
-            question: "What animal is shown here?",
-            options: ["Cat", "Dog", "Bird"],
-            reward: 15,
-            imageUrls: ["https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=800"], // Cat
-            isValidation: true,
-            correctAnswer: "Cat",
-          }
-        ]
-      }
-    }
-  });
-  console.log(`🔀 Created Mixed Dataset with ${2} tasks.`);
+  console.log(`🖼️ Created Thumbnail Dataset (ID: ${thumbnailDataset.id})`);
 
   console.log('✅ Seeding completed successfully!');
 }
