@@ -1,10 +1,14 @@
+'use cache';
+
 'use server';
 
 import { prisma } from '@/lib/prisma';
 import { paginate } from '@/lib/reqeusts/pagination'; // Matching your path
 import { Dataset } from '@prisma/client';
+import { cacheTag } from 'next/cache';
 
 export async function getActiveDatasets(page = 1, limit = 10) {
+  cacheTag('datasetsList');
   try {
     const result = await paginate<Dataset, any>(
       prisma.dataset,
