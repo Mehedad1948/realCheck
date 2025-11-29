@@ -32,13 +32,19 @@ export default async function DatasetList() {
                     className="mb-4 block"
                     href={`/app/tasks/${dataset.id}`}
                 >
-                    <Card className="hover:bg-accent/50 transition-colors cursor-pointer active:scale-95 duration-200 border-border/50">
-                        <CardContent className="p-4 flex items-center justify-between">
+                    <Card className="hover:bg-accent/50 relative transition-colors cursor-pointer active:scale-95 duration-200 border-border/50">
 
+                        <CardContent className="p-4  grid grid-cols-[1fr_auto] items-center justify-between">
+                            <div className="font-bold absolute top-1 right-2 text-primary text-xs">EARN {dataset.reward} TON</div>
+
+                            <Badge variant="secondary" className="absolute right-2 bottom-1 text-[10px] h-5 px-1 mt-1">
+                                {/* @ts-ignore: _count exists at runtime if included in query */}
+                                {dataset._count?.tasks || 0} Tasks
+                            </Badge>
                             {/* Left Side: Icon + Text */}
                             <div className="flex items-center gap-4">
                                 {/* Icon Container */}
-                                <div className="h-10 w-10 min-w-[2.5rem] rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                <div className="h-10 w-10  rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                                     <span className="text-xl">
                                         {/* You can add logic here to show different icons based on title keywords */}
                                         {getIconForDataset(dataset.title)}
@@ -47,27 +53,13 @@ export default async function DatasetList() {
 
                                 {/* Text Content */}
                                 <div className="overflow-hidden">
-                                    <h4 className="font-semibold truncate pr-2">{dataset.title}</h4>
+                                    <h4 className="font-semibold text-wrap pr-2">{dataset.title}</h4>
                                     <p className="text-xs text-muted-foreground line-clamp-1">
                                         {dataset.description}
                                     </p>
                                 </div>
                             </div>
 
-                            {/* Right Side: Reward + Time */}
-                            <div className="text-right min-w-[70px]">
-                                {/* 
-                   NOTE: Dataset model doesn't have a reward field in your schema yet.
-                   We are showing a placeholder or you can aggregate this in your DB query.
-                */}
-                                <div className="font-bold text-primary text-sm">EARN TON</div>
-
-                                {/* Showing task count if available from the _count include */}
-                                <Badge variant="secondary" className="text-[10px] h-5 px-1 mt-1">
-                                    {/* @ts-ignore: _count exists at runtime if included in query */}
-                                    {dataset._count?.tasks || 0} Tasks
-                                </Badge>
-                            </div>
 
                         </CardContent>
                     </Card>
