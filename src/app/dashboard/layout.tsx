@@ -6,7 +6,7 @@ import ThemeToggle from '@/components/ui/ThemeToggle.tsx';
 export default function DashboardLayout({ children }: { children: ReactNode }) {
     return (
         <div className="min-h-screen ">
-           
+
             {/* Sidebar - Hidden on Mobile, Visible on Desktop */}
             <Suspense>
                 <Sidebar />
@@ -25,7 +25,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             {/* Main Content Area - Padded Left on Desktop */}
             <main className="sm:pl-64">
                 <div className="container mx-auto p-4 md:p-8 max-w-7xl">
-                    {children}
+                    <Suspense>
+                        {children}
+                    </Suspense>
                 </div>
             </main>
         </div>
