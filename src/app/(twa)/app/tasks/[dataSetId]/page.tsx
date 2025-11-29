@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import ClientTaskPage from './ClientTaskPage';
 import { getTasks } from '@/app/actions/tasks';
+import { getDataset } from '@/app/actions/tasks/getSingleDatasetData';
 
 export default async function page({ params }: { params: Promise<Record<string, string>> }) {
     const getParams = await params
@@ -11,9 +12,11 @@ export default async function page({ params }: { params: Promise<Record<string, 
 
     const { data } = await getTasks(datasetId);
 
-    if (Array.isArray(data)) {
+    const { data: datasetData } = await getDataset(datasetId)
+
+    if (Array.isArray(data) && datasetData) {
         return <Suspense fallback={<div></div>}>
-            <ClientTaskPage tasks={data} />
+            <ClientTaskPage datasetData={datasetData} tasks={data} />
         </Suspense>
     } else {
         return <div className='flex flex-col gap-4'>

@@ -6,17 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Task } from '@/lib/types/tasks';
+import { Dataset } from '@prisma/client';
 import { ArrowLeft } from "lucide-react";
+import Image from 'next/image';
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export default function ClientTaskPage({ tasks }: { tasks: Task[] }) {
+export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], datasetData: Dataset }) {
     const router = useRouter();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
 
     const currentTask = tasks[currentIndex];
+
+    console.log('🐞🐞🐞', datasetData);
+
 
     // Calculate progress safely
     const progress = tasks.length > 0 ? ((currentIndex) / tasks.length) * 100 : 0;
@@ -69,7 +74,9 @@ export default function ClientTaskPage({ tasks }: { tasks: Task[] }) {
                 <div className="space-y-4">
                     {currentTask.imageUrls.map((url, idx) => (
                         <div key={idx} className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
-                            <img
+                            <Image
+                                width={400}
+                                height={400}
                                 src={url}
                                 alt={`Task Content ${idx + 1}`}
                                 className="object-contain w-full h-full"
@@ -130,11 +137,14 @@ export default function ClientTaskPage({ tasks }: { tasks: Task[] }) {
                     <CardHeader>
                         <div className="flex justify-between items-start gap-2">
                             <CardTitle className="text-lg font-semibold">
-                                {currentTask?.question}
+                                {datasetData?.question}
                             </CardTitle>
                             <Badge variant="secondary" className="uppercase text-[10px]">
-                                {currentTask?.type?.replace("_", " ") || "Task"}
+                                {datasetData?.dataType?.replace("_", " ") || "Task"}
                             </Badge>
+                        </div>
+                        <div className='text-sm mt  text-primary-foreground mb-3'>
+                            {datasetData.description}
                         </div>
                     </CardHeader>
 
@@ -144,7 +154,7 @@ export default function ClientTaskPage({ tasks }: { tasks: Task[] }) {
                 </div>
 
                 <CardFooter className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    {currentTask?.options?.map((option) => (
+                    {datasetData?.options?.map((option) => (
                         <Button
                             key={option}
                             onClick={() => handleVote(option)}
