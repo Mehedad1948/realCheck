@@ -61,7 +61,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
     // --- Voting Handler (Optimistic) ---
 
     const handleVote = async (selectedOption: string) => {
-        if (!currentTask || isSubmitting) return;
+        if (!currentTask ) return;
         
         setIsSubmitting(true);
         const taskId = currentTask.id;
@@ -248,7 +248,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
                                 variant="ghost"
                                 size="sm"
                                 onClick={handlePrevious}
-                                disabled={currentIndex === 0 || isSubmitting}
+                                disabled={currentIndex === 0 }
                                 className="text-muted-foreground"
                             >
                                 <ChevronLeft className="w-4 h-4 mr-1" /> Prev
@@ -259,7 +259,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleNext}
-                                disabled={currentIndex === tasks.length - 1 || isSubmitting}
+                                disabled={currentIndex === tasks.length - 1 }
                                 className="text-muted-foreground"
                             >
                                 Next <ChevronRight className="w-4 h-4 ml-1" />
