@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,9 +5,7 @@ import { useTheme } from "next-themes";
 
 export function TelegramThemeSync() {
   const { setTheme } = useTheme();
-
-  // Use 'WebApp' type from the global namespace provided by the package
-  // or just 'any' if you want to be lazy, but strictly:
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [tgData, setTgData] = useState<any | null>(null);
 
   useEffect(() => {
@@ -18,38 +15,41 @@ export function TelegramThemeSync() {
       tg.ready();
       tg.expand();
 
-      const updateTgData = () => {
-        // Save the whole WebApp object to state
-        // (You usually don't need to copy params manually, just store the ref)
-        setTgData({ ...tg }); // Create a shallow copy to trigger re-render
+      const syncData = () => {
+        setTgData({ ...tg });
 
-        // 1. Sync Next-Themes
+        // 1. Sync Theme
         if (tg.colorScheme) {
           setTheme(tg.colorScheme);
         }
 
-        console.log('❌❌', tg);
-        
-
-        // 2. Sync Telegram Header & Background
+        // 2. Sync Header Colors
         const bgColor = tg.themeParams?.bg_color || "#ffffff";
         tg.setHeaderColor(bgColor);
         tg.setBackgroundColor(bgColor);
+
+        // ============================================================
+        // 3. SECURITY: SET COOKIE FOR SERVER SIDE ACCESS
+        // ============================================================
+        // We store the raw 'initData' string. 
+        // This string contains the hash we need to verify on the server.
+        if (tg.initData) {
+          // Set cookie: name=tg_init_data, path=/, expires in 24h
+          const expires = new Date(Date.now() + 86400 * 1000).toUTCString();
+          document.cookie = `tg_init_data=${tg.initData}; path=/; expires=${expires}; SameSite=Strict; Secure`;
+        }
       };
 
       // Initial Run
-      updateTgData();
+      syncData();
 
-      // Event Listener (Using correct camelCase)
-      tg.onEvent("themeChanged", updateTgData);
-
-      // Cleanup function to remove listener (Good practice)
+      // Listeners
+      tg.onEvent("themeChanged", syncData);
       return () => {
-        tg.offEvent("themeChanged", updateTgData);
+        tg.offEvent("themeChanged", syncData);
       };
     }
   }, [setTheme]);
 
-
-  return null
+  return null;
 }

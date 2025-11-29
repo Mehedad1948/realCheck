@@ -20,7 +20,6 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
 
     const currentTask = tasks[currentIndex];
 
-    console.log('🐞🐞🐞', datasetData);
 
 
     // Calculate progress safely
@@ -34,6 +33,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
 
         try {
             const result = await submitVote(currentTask.id, selectedOption);
+
 
             if (result.success) {
                 setTimeout(() => {

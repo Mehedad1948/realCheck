@@ -35,7 +35,7 @@ export default async function DatasetList() {
                     <Card className="hover:bg-accent/50 relative transition-colors cursor-pointer active:scale-95 duration-200 border-border/50">
 
                         <CardContent className="p-4  grid grid-cols-[1fr_auto] items-center justify-between">
-                            <div className="font-bold absolute top-1 right-2 text-primary text-xs">EARN {dataset.reward} TON</div>
+                            <div className="font-bold absolute top-2 right-2 text-primary text-xs">EARN {dataset.reward} TON</div>
 
                             <Badge variant="secondary" className="absolute right-2 bottom-1 text-[10px] h-5 px-1 mt-1">
                                 {/* @ts-ignore: _count exists at runtime if included in query */}
