@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, Suspense } from 'react';
 import Sidebar from './Sidebar';
 import { Menu } from 'lucide-react'; // Mobile menu icon
 import ThemeToggle from '@/components/ui/ThemeToggle.tsx';
@@ -8,7 +8,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="min-h-screen ">
             <ThemeToggle />
             {/* Sidebar - Hidden on Mobile, Visible on Desktop */}
-            <Sidebar />
+            <Suspense>
+                <Sidebar />
+            </Suspense>
 
             {/* Mobile Header */}
             <header className="sticky top-0 z-20 flex h-16 items-center border-b  px-4 sm:hidden">
