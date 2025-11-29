@@ -38,7 +38,7 @@ export default function CreateDatasetPage() {
       });
 
       if (result.success) {
-        router.push(`/client/dashboard/datasets/${result.datasetId}/upload`);
+        router.push(`/dashboard/datasets/${result.datasetId}/upload`);
       } else {
         alert("Error: " + result.error);
       }
