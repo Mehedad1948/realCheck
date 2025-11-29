@@ -126,7 +126,7 @@ export default async function DashboardPage() {
                     {/* Real Datasets Cards */}
                     {datasets.map((dataset) => (
                         <div key={dataset.id} className="flex flex-col rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
-                            <div className="flex items-start justify-between p-5">
+                            <Link href={`/dashboard/datasets/${dataset.id}`} className="flex items-start justify-between p-5">
                                 <div>
                                     <div className="flex items-center gap-2 mb-2">
                                         {/* Status Badge */}
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
                                 <button className="text-muted-foreground hover:text-foreground">
                                     <MoreVertical className="h-5 w-5" />
                                 </button>
-                            </div>
+                            </Link>
 
                             <div className="flex-1 px-5">
                                 {/* Progress Bar Placeholder - Since we don't have 'completed' counts yet, we show a placeholder */}
