@@ -5,22 +5,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Task } from '@/lib/types/tasks'; // Ensure this matches your schema
+import { Task } from '@/lib/types/tasks'; 
 import { Dataset } from '@prisma/client';
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Image from 'next/image';
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils"; // Standard shadcn utility
+import { cn } from "@/lib/utils";
 import { SwipeWrapper } from '@/components/tools/SwipeWrapper';
 
 export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], datasetData: Dataset }) {
     const router = useRouter();
     const [currentIndex, setCurrentIndex] = useState(0);
+    
+    // Visual animation state for sliding
     const [isAnimating, setIsAnimating] = useState(false);
+    
+    // Lock buttons while processing the click event
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // NEW: Store user answers locally { [taskId]: "Option A" }
+    // Store user answers locally { [taskId]: "Option A" }
     const [userVotes, setUserVotes] = useState<Record<string, string>>({});
 
     const currentTask = tasks[currentIndex];
@@ -36,10 +41,10 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
             setTimeout(() => {
                 setCurrentIndex((prev) => prev + 1);
                 setIsAnimating(false);
-            }, 150); // Small delay for animation feel
+            }, 150); 
         } else {
             // If currently on last slide and we have voted, show finish
-            if (userVotes[currentTask.id]) handleBatchComplete();
+            if (userVotes[currentTask?.id]) handleBatchComplete();
         }
     };
 
@@ -53,32 +58,54 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
         }
     };
 
-    // --- Voting Handler ---
+    // --- Voting Handler (Optimistic) ---
 
     const handleVote = async (selectedOption: string) => {
-        if (!currentTask) return;
+        if (!currentTask || isSubmitting) return;
+        
+        setIsSubmitting(true);
+        const taskId = currentTask.id;
+        const previousVote = userVotes[taskId]; // Store in case we need to revert
 
-        // 1. Optimistic Update: Save vote locally immediately so UI updates
+        // 1. Optimistic Update: Save vote locally immediately
         setUserVotes((prev) => ({
             ...prev,
-            [currentTask.id]: selectedOption
+            [taskId]: selectedOption
         }));
 
-        // 2. Submit to Server
+        // 2. Trigger Animation & Next Slide Instantly
+        handleNext();
+
+        // 3. Submit to Server in Background
         try {
-            // Only submit if we haven't submitted this exact vote before (optional optimization)
-            // For now, we submit every click to be safe
-            const result = await submitVote(currentTask.id, selectedOption);
+            // We wait for the server here, but the UI has already moved on
+            const result = await submitVote(taskId, selectedOption);
 
             if (!result.success) {
-                toast.error(result.message || "Error saving vote.");
-                // Optional: Revert local state on failure
-            } else {
-                // 3. Auto Advance on success
-                handleNext();
+                throw new Error(result.message || "Server rejected vote");
             }
-        } catch (error) {
-            toast.error("Network error.");
+            
+            // Success: Do nothing, UI is already correct.
+        } catch (error: any) {
+            // 4. Error Handling: Revert and Notify
+            console.error("Vote failed:", error);
+            
+            // Revert local state
+            setUserVotes((prev) => {
+                const newState = { ...prev };
+                if (previousVote) {
+                    newState[taskId] = previousVote; // Restore old vote if existed
+                } else {
+                    delete newState[taskId]; // Remove invalid vote
+                }
+                return newState;
+            });
+
+            toast.error("Vote failed to save", {
+                description: "Please check your connection and try again.",
+            });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -197,6 +224,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
                                     <Button
                                         key={option}
                                         onClick={() => handleVote(option)}
+                                        disabled={isSubmitting} // Prevent double clicks during animation start
                                         // If selected, use 'default' (solid color), else 'outline'
                                         variant={isSelected ? "default" : "outline"}
                                         className={cn(
@@ -205,33 +233,33 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
                                             isSelected ? "border-primary font-bold ring-2 ring-primary/20" : "hover:bg-primary/5"
                                         )}
                                     >
+                                        {isSubmitting && isSelected ? (
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        ) : null}
                                         {option}
                                     </Button>
                                 );
                             })}
                         </div>
 
-                        {/* Manual Navigation Footer (Optional but good UX) */}
+                        {/* Manual Navigation Footer */}
                         <div className="flex justify-between w-full pt-2 border-t mt-2">
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={handlePrevious}
-                                disabled={currentIndex === 0}
+                                disabled={currentIndex === 0 || isSubmitting}
                                 className="text-muted-foreground"
                             >
                                 <ChevronLeft className="w-4 h-4 mr-1" /> Prev
                             </Button>
 
-                            <span className="text-xs text-muted-foreground self-center">
-                                Swipe or Tap sides
-                            </span>
 
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleNext}
-                                disabled={currentIndex === tasks.length - 1}
+                                disabled={currentIndex === tasks.length - 1 || isSubmitting}
                                 className="text-muted-foreground"
                             >
                                 Next <ChevronRight className="w-4 h-4 ml-1" />
