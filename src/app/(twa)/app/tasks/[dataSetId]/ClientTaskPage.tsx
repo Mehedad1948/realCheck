@@ -143,7 +143,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
                                 {datasetData?.dataType?.replace("_", " ") || "Task"}
                             </Badge>
                         </div>
-                        <div className='text-sm mt  text-primary-foreground mb-3'>
+                        <div className='text-sm opacity-90 mb-3'>
                             {datasetData.description}
                         </div>
                     </CardHeader>
