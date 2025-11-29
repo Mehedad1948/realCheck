@@ -13,40 +13,20 @@ datasource db {
 // 1. THE CLIENT (The Business who pays you)
 // ==========================================
 model Client {
-  id           String   @id @default(cuid())
+  id           String  @id @default(cuid())
   companyName  String
-  email        String   @unique // Used for Web Dashboard Login
-  passwordHash String?  // If you add password login later
+  email        String  @unique // Used for Web Dashboard Login
+  passwordHash String? // If you add password login later
   contactName  String?
 
-  datasets     Dataset[] // A client owns multiple datasets
+  datasets Dataset[] // A client owns multiple datasets
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 // ==========================================
 // 2. THE DATA ( The Orders)
 // ==========================================
-model Dataset {
-  id          String   @id @default(cuid())
-  title       String   // e.g. "Nike - Shoe Sentiment Analysis"
-  description String   // e.g. "Select Positive if the user sounds happy."
-  status      String   @default("ACTIVE") // ACTIVE, PAUSED, COMPLETED
-  
-  // --- TEMPLATE CONFIG (Moved from Task) ---
-  dataType    String   // TEXT or IMAGE
-  question    String   // "Is this sentiment positive?"
-  options     String[] // ["Yes", "No"] (Empty if text input)
-  reward      Int      @default(50) // Base reward for all tasks in this set
-  
-  // Link to the Client who ordered this
-  clientId    String   
-  client      Client   @relation(fields: [clientId], references: [id])
-  
-  tasks       Task[]   
-  
-  createdAt   DateTime @default(now())
-}
 
 
 // ==========================================
@@ -55,35 +35,64 @@ model Dataset {
 // We keep this named "User" so your existing Next.js code doesn't break.
 // But conceptually, this is the "Worker".
 model User {
-  id           String   @id @default(cuid())
-  telegramId   String   @unique 
-  username     String?
-  balance      Float    @default(0.0)
-  reputation   Float    @default(100.0) 
-  
-  votes        Vote[]
-  
-  createdAt    DateTime @default(now())
+  id         String  @id @default(cuid())
+  telegramId String  @unique
+  username   String?
+  balance    Float   @default(0.0)
+  reputation Float   @default(100.0)
+
+  votes Vote[]
+
+  createdAt DateTime @default(now())
 }
 
 // ==========================================
 // 4. TASKS & VOTES
 // ==========================================
+model Dataset {
+  id          String @id @default(cuid())
+  title       String // e.g. "Nike - Shoe Sentiment Analysis"
+  description String // e.g. "Select Positive if the user sounds happy."
+  status      String @default("ACTIVE") // ACTIVE, PAUSED, COMPLETED
+
+  // --- TEMPLATE CONFIG (Moved from Task) ---
+  dataType      String // TEXT or IMAGE
+  question      String // "Is this sentiment positive?"
+  options       String[] // ["Yes", "No"] (Empty if text input)
+  reward        Int      @default(50) // Base reward for all tasks in this set
+  requiredVotes Int      @default(2)
+
+  // Link to the Client who ordered this
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
+  tasks Task[]
+
+  createdAt DateTime @default(now())
+}
+
 model Task {
-  id            String   @id @default(uuid())
-  datasetId     String
-  dataset       Dataset  @relation(fields: [datasetId], references: [id])
+  id        String  @id @default(uuid())
+  datasetId String
+  dataset   Dataset @relation(fields: [datasetId], references: [id])
 
-  // --- CONTENT ONLY (Specific to this single task) ---
-  textContent   String?  @map("text_content")
-  imageUrls     String[] @map("image_urls")
+  // Content
+  textContent String?  @map("text_content")
+  imageUrls   String[] @map("image_urls")
+
+  // Validation
+  correctAnswer String? @map("correct_answer")
+  isValidation  Boolean @default(false) @map("is_validation")
+
+  // --- NEW FIELDS FOR DISTRIBUTION LOGIC ---
+  collectedVotes Int    @default(0)         // How many people have voted so far?
+  status         String @default("ACTIVE")  // ACTIVE or COMPLETED
+
+  votes     Vote[]
+  createdAt DateTime @default(now())
   
-  // Validation (Golden Data)
-  correctAnswer String?  @map("correct_answer")
-  isValidation  Boolean  @default(false) @map("is_validation")
-
-  votes         Vote[]
-  createdAt     DateTime @default(now())
+  // Add an index for speed so "getTasks" is instant
+  @@index([status, collectedVotes]) 
 }
 
 model Vote {
@@ -91,10 +100,10 @@ model Vote {
   userId    String
   taskId    String
   selection String
-  isCorrect Boolean? 
+  isCorrect Boolean?
 
-  user      User     @relation(fields: [userId], references: [id])
-  task      Task     @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  task Task @relation(fields: [taskId], references: [id])
 
-  @@unique([userId, taskId]) 
+  @@unique([userId, taskId])
 }

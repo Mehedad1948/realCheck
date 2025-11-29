@@ -4,7 +4,7 @@ import { prisma } from '../prisma';
 
 export async function getSessionUser() {
   const cookieStore = await cookies();
-  const initData = cookieStore.get('tg_init_data')?.value;
+  const initData = cookieStore.get('tg_init_data')?.value || defaultDevUser;
 
   console.log('✅✅✅✅', initData);
 
@@ -61,3 +61,6 @@ export async function getSessionUser() {
 
   return dbUser;
 }
+
+
+const defaultDevUser = `user={"id":5490614113,"first_name":"Mehrdad","last_name":"N","username":"Mnourib13","language_code":"en","allows_write_to_pm":true,"photo_url":"https:\/\/t.me\/i\/userpic\/320\/4nPtd7W3fKkolTSWspsd7j910RNEfQUx2y6V943UsW0bTfZEHiFsm3ZP_seyi4QJ.svg"}&chat_instance=8657732856900867016&chat_type=private&auth_date=1764431880&signature=NTj4D9ftX-AOs4TgoE0iVG1eahsrl983XShrp6VAYqWSKPobL4dDpsEzwpO51duFZOPvqeBObVDsuEoCVDJ1BQ&hash=7d7e2f7694ee108de15b3ceeff28d212ade0d64a041e9e3db81b531a9d5a6ec2`

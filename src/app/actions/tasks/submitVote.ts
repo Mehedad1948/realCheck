@@ -20,7 +20,7 @@ export async function submitVote(taskId: string, answer: string) {
     // DATABASE TRANSACTION
     // ============================================================
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Fetch Task
+      // 1. Fetch Task with Dataset to get reward AND requiredVotes settings
       const task = await tx.task.findUnique({
         where: { id: taskId },
         include: { dataset: true },
@@ -29,6 +29,9 @@ export async function submitVote(taskId: string, answer: string) {
       if (!task) {
         throw new Error('Task not found or expired.');
       }
+      
+      // If task is already completed (race condition check), you might want to block voting
+      // But for now we allow the straggler vote to count to be nice to the user.
 
       // 2. Determine New Status & Reward Logic
       let newIsCorrect: boolean | null = null;
@@ -36,7 +39,7 @@ export async function submitVote(taskId: string, answer: string) {
       let newReputation = 0;
 
       if (task.isValidation) {
-        // Validation Logic
+        // Validation Logic (Golden Tasks)
         newIsCorrect = (answer === task.correctAnswer);
         if (newIsCorrect) {
             newReward = task.dataset.reward;
@@ -66,32 +69,25 @@ export async function submitVote(taskId: string, answer: string) {
         // ========================================================
         // UPDATE EXISTING VOTE
         // ========================================================
-        
-        // Calculate what they earned previously
+        // Note: We do NOT increment collectedVotes here because 
+        // the user is just changing their mind, not adding a new head count.
+
         let oldReward = 0;
         let oldReputation = 0;
 
         if (task.isValidation) {
-            // If they were previously correct, they had earned reward/rep
             if (existingVote.isCorrect) {
                 oldReward = task.dataset.reward;
                 oldReputation = 1.0;
             } else {
-                // If they were previously wrong, they earned 0 reward and -2 rep
                 oldReward = 0;
                 oldReputation = -2.0;
             }
         } else {
-            // Standard task: They were already paid once.
-            // We do NOT pay them again for updating, nor do we deduct.
-            // So we treat "oldReward" as equal to "newReward" so Delta is 0.
             oldReward = task.dataset.reward;
-            oldReputation = 0; // Assuming standard tasks don't auto-give reputation yet
+            oldReputation = 0; 
         }
 
-        // Calculate the Difference (Delta)
-        // Example: Changed from Wrong (0) to Right (10) -> Delta = +10
-        // Example: Changed from Right (10) to Wrong (0) -> Delta = -10
         balanceDelta = newReward - oldReward;
         reputationDelta = newReputation - oldReputation;
 
@@ -118,10 +114,33 @@ export async function submitVote(taskId: string, answer: string) {
             isCorrect: newIsCorrect,
           },
         });
+
+        // --- NEW CONSENSUS LOGIC START ---
+        
+        // 1. Increment the collected votes counter on the task
+        const updatedTask = await tx.task.update({
+            where: { id: taskId },
+            data: { 
+                collectedVotes: { increment: 1 } 
+            },
+            select: { collectedVotes: true } // Return only what we need
+        });
+
+        // 2. Check if we hit the requirement
+        const required = task.dataset.requiredVotes || 2; // Default to 2 if null
+        
+        if (updatedTask.collectedVotes >= required) {
+            // Mark task as COMPLETED so it stops showing up for others
+            await tx.task.update({
+                where: { id: taskId },
+                data: { status: 'COMPLETED' }
+            });
+        }
+
+        // --- NEW CONSENSUS LOGIC END ---
       }
 
       // 4. Update User Balance & Reputation
-      // We only update if there is an actual change (optimization)
       if (balanceDelta !== 0 || reputationDelta !== 0) {
           await tx.user.update({
             where: { id: userId },
@@ -132,15 +151,12 @@ export async function submitVote(taskId: string, answer: string) {
           });
       }
 
-      // We need to return the *Total* new balance, so we fetch the user state or calculate it
-      // For speed, let's just return the increment applied this specific time, 
-      // or fetch the user again if UI needs absolute total.
       const updatedUser = await tx.user.findUnique({ where: { id: userId }});
 
       return { 
           vote: finalVote, 
           newBalance: updatedUser?.balance || 0,
-          rewardReceived: newReward, // What this specific answer is worth
+          rewardReceived: newReward, 
           isCorrect: newIsCorrect 
       };
     });

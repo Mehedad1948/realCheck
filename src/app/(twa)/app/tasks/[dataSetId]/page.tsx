@@ -2,15 +2,17 @@
 
 import { Suspense } from 'react';
 import ClientTaskPage from './ClientTaskPage';
-import { getTasks } from '@/app/actions/tasks';
 import { getDataset } from '@/app/actions/tasks/getSingleDatasetData';
+import { getTasksForUser } from '@/app/actions/tasks';
+
+
 
 export default async function page({ params }: { params: Promise<Record<string, string>> }) {
     const getParams = await params
 
     const datasetId = getParams.dataSetId;
 
-    const { data } = await getTasks(datasetId);
+    const data = await getTasksForUser(datasetId);
 
     const { data: datasetData } = await getDataset(datasetId)
 

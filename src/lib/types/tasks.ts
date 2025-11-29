@@ -8,11 +8,14 @@ export interface Task {
   imageUrls?: string[]; // Optional: array allows for carousels or single images
 
   options: string[];
-  reward: number;
+  reward?: number;
+
+  status: string;
+  collectedVotes?: number;
 
   // Validation / Credibility Props (Backend logic primarily)
   isValidation?: boolean; // If true, this is a test
-  correctAnswer: string | null; // The expected answer for validation tasks
+  correctAnswer?: string | null; // The expected answer for validation tasks
 }
 
 export interface UserState {

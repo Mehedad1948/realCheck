@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Task } from '@/lib/types/tasks'; 
+import { Task } from '@/lib/types/tasks';
 import { Dataset } from '@prisma/client';
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Image from 'next/image';
@@ -15,13 +15,20 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SwipeWrapper } from '@/components/tools/SwipeWrapper';
 
-export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], datasetData: Dataset }) {
+export type TaskItem =
+    Pick<Task, "id" | "textContent" | "imageUrls"> &
+    Pick<Dataset, "question" | "options" | "dataType" | 'reward'> & {
+        // If you specifically wanted 'status' to be optional:
+        status?: string;
+    };
+
+export default function ClientTaskPage({ tasks, datasetData }: { tasks: TaskItem[], datasetData: Dataset }) {
     const router = useRouter();
     const [currentIndex, setCurrentIndex] = useState(0);
-    
+
     // Visual animation state for sliding
     const [isAnimating, setIsAnimating] = useState(false);
-    
+
     // Lock buttons while processing the click event
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -41,7 +48,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
             setTimeout(() => {
                 setCurrentIndex((prev) => prev + 1);
                 setIsAnimating(false);
-            }, 150); 
+            }, 150);
         } else {
             // If currently on last slide and we have voted, show finish
             if (userVotes[currentTask?.id]) handleBatchComplete();
@@ -61,8 +68,8 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
     // --- Voting Handler (Optimistic) ---
 
     const handleVote = async (selectedOption: string) => {
-        if (!currentTask ) return;
-        
+        if (!currentTask) return;
+
         setIsSubmitting(true);
         const taskId = currentTask.id;
         const previousVote = userVotes[taskId]; // Store in case we need to revert
@@ -84,12 +91,12 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
             if (!result.success) {
                 throw new Error(result.message || "Server rejected vote");
             }
-            
+
             // Success: Do nothing, UI is already correct.
         } catch (error: any) {
             // 4. Error Handling: Revert and Notify
             console.error("Vote failed:", error);
-            
+
             // Revert local state
             setUserVotes((prev) => {
                 const newState = { ...prev };
@@ -248,7 +255,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
                                 variant="ghost"
                                 size="sm"
                                 onClick={handlePrevious}
-                                disabled={currentIndex === 0 }
+                                disabled={currentIndex === 0}
                                 className="text-muted-foreground"
                             >
                                 <ChevronLeft className="w-4 h-4 mr-1" /> Prev
@@ -259,7 +266,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: Task[], 
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleNext}
-                                disabled={currentIndex === tasks.length - 1 }
+                                disabled={currentIndex === tasks.length - 1}
                                 className="text-muted-foreground"
                             >
                                 Next <ChevronRight className="w-4 h-4 ml-1" />
