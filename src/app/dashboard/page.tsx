@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { 
-    Plus, 
-    Upload, 
-    FileText, 
-    CheckCircle2, 
+import {
+    Plus,
+    Upload,
+    FileText,
+    CheckCircle2,
     MoreVertical,
     Clock,
     Database
@@ -13,27 +13,27 @@ import { cn } from '@/lib/utils';
 
 // 1. Fetch Data (Server Side)
 async function getDashboardData() {
-  // TODO: Replace with actual session user ID later
-  const CLIENT_ID = "cmiis4nn200017yfjmvhkre56"; 
+    // TODO: Replace with actual session user ID later
+    const CLIENT_ID = "cmiis4nn200017yfjmvhkre56";
 
-  const datasets = await prisma.dataset.findMany({
-    where: { clientId: CLIENT_ID },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      _count: {
-        select: { tasks: true }
-      }
-    }
-  });
+    const datasets = await prisma.dataset.findMany({
+        where: { clientId: CLIENT_ID },
+        orderBy: { createdAt: 'desc' },
+        include: {
+            _count: {
+                select: { tasks: true }
+            }
+        }
+    });
 
-  // Calculate Aggregates
-  const totalDatasets = datasets.length;
-  const totalTasks = datasets.reduce((acc, curr) => acc + curr._count.tasks, 0);
-  
-  // Mocking "completed" tasks for now as we haven't built the worker side yet
-  const pendingReview = 0; 
+    // Calculate Aggregates
+    const totalDatasets = datasets.length;
+    const totalTasks = datasets.reduce((acc, curr) => acc + curr._count.tasks, 0);
 
-  return { datasets, totalDatasets, totalTasks, pendingReview };
+    // Mocking "completed" tasks for now as we haven't built the worker side yet
+    const pendingReview = 0;
+
+    return { datasets, totalDatasets, totalTasks, pendingReview };
 }
 
 export default async function DashboardPage() {
@@ -41,7 +41,7 @@ export default async function DashboardPage() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            
+
             {/* Header Section */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -53,8 +53,8 @@ export default async function DashboardPage() {
                         <FileText className="h-4 w-4" />
                         Docs
                     </button>
-                    <Link 
-                        href="/dashboard/datasets/create" 
+                    <Link
+                        href="/dashboard/datasets/create"
                         className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:brightness-110 shadow-sm transition-all"
                     >
                         <Plus className="h-4 w-4" />
@@ -106,12 +106,12 @@ export default async function DashboardPage() {
             {/* Datasets Grid */}
             <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-foreground">Active Datasets</h2>
-                
+
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    
+
                     {/* New Data Entry Card (Call to Action) */}
-                    <Link 
-                        href="/dashboard/datasets/create" 
+                    <Link
+                        href="/dashboard/datasets/create"
                         className="group flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30 p-8 transition-all hover:border-primary/50 hover:bg-primary/5"
                     >
                         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-110">
@@ -132,25 +132,25 @@ export default async function DashboardPage() {
                                         {/* Status Badge */}
                                         <span className={cn(
                                             "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium border",
-                                            dataset.active 
-                                                ? "bg-green-500/10 text-green-600 border-green-500/20" 
+                                            dataset.status === 'ACTIVE'
+                                                ? "bg-green-500/10 text-green-600 border-green-500/20"
                                                 : "bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
                                         )}>
-                                            {dataset.active ? "ACTIVE" : "DRAFT"}
+                                            {dataset.status}
                                         </span>
                                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold border border-border px-1.5 rounded">
                                             {dataset.dataType}
                                         </span>
                                     </div>
                                     <h3 className="font-semibold text-foreground line-clamp-1" title={dataset.question}>
-                                        {dataset.name || dataset.question}
+                                        {dataset.title || dataset.question}
                                     </h3>
                                 </div>
                                 <button className="text-muted-foreground hover:text-foreground">
                                     <MoreVertical className="h-5 w-5" />
                                 </button>
                             </div>
-                            
+
                             <div className="flex-1 px-5">
                                 {/* Progress Bar Placeholder - Since we don't have 'completed' counts yet, we show a placeholder */}
                                 <div className="flex justify-between text-sm text-muted-foreground mb-2">
@@ -158,8 +158,8 @@ export default async function DashboardPage() {
                                     <span>0%</span>
                                 </div>
                                 <div className="h-2 w-full rounded-full bg-muted">
-                                    <div 
-                                        className="h-2 rounded-full bg-primary transition-all" 
+                                    <div
+                                        className="h-2 rounded-full bg-primary transition-all"
                                         style={{ width: `0%` }}
                                     ></div>
                                 </div>
@@ -172,8 +172,8 @@ export default async function DashboardPage() {
                                 <span className="text-xs text-muted-foreground">
                                     Created {new Date(dataset.createdAt).toLocaleDateString()}
                                 </span>
-                                <Link 
-                                    href={`/dashboard/datasets/${dataset.id}/upload`} 
+                                <Link
+                                    href={`/dashboard/datasets/${dataset.id}/upload`}
                                     className="text-sm font-medium text-primary hover:text-primary/80 hover:underline"
                                 >
                                     Add Data &rarr;
