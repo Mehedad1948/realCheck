@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { paginate } from '@/lib/reqeusts/pagination'; // Make sure this path matches your folder structure
-import { Task } from '@prisma/client';
+import { Task } from '@/lib/types/tasks';
 
 export async function getTasks(datasetId: string, page = 1, limit = 10) {
   const result = await paginate<Task, any>(
