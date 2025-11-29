@@ -51,5 +51,8 @@ export function TelegramThemeSync() {
     }
   }, [setTheme]);
 
-  return null;
+  return <div className='px-4 py-2 '>
+    {JSON.stringify(tgData)}
+
+  </div>;
 }
