@@ -16,6 +16,9 @@ export default async function page({ params }: { params: Promise<Record<string, 
 
     const { data: datasetData } = await getDataset(datasetId)
 
+    console.log('➡️➡️➡️', data);
+
+
     if (Array.isArray(data) && datasetData) {
         return <Suspense fallback={<div></div>}>
             <ClientTaskPage datasetData={datasetData} tasks={data} />

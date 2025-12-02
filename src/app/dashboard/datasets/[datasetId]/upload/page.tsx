@@ -105,7 +105,7 @@ export default function DatasetUploadPage() {
         const result = await addTasksToDataset(datasetId, cleanData);
 
         if (result.success) {
-            router.push(`/dashboard/datasets`); // Redirect to list
+            router.push(`/dashboard`); // Redirect to list
         } else {
             setError(result.error || "Upload failed");
             setIsUploading(false);

@@ -11,6 +11,16 @@ import {
   CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logoutAction } from '../actions/auth/logout';
+
+// Define the shape of the user data we expect
+interface SidebarProps {
+  user: {
+    id: string;
+    email: string;
+    role: string;
+  } | null;
+}
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -19,8 +29,22 @@ const navItems = [
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
+
+  // Handle Logout
+  const handleLogout = async () => {
+    await logoutAction();
+    // The Server Action handles the redirect to '/', but strict client handling is good practice
+  };
+
+  // Generate Initials (e.g., "client@test.com" -> "CL")
+  const initials = user?.email 
+    ? user.email.substring(0, 2).toUpperCase() 
+    : '??';
+
+  // Extract username from email (e.g., "client" from "client@test.com")
+  const userName = user?.email ? user.email.split('@')[0] : 'Guest';
 
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r border-border bg-background text-foreground transition-colors duration-300 sm:flex">
@@ -39,7 +63,10 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-3">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            // Check if current path starts with the link href (for nested routes)
+            // e.g. /dashboard/datasets/create should keep /dashboard/datasets active
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            
             return (
               <li key={item.name}>
                 <Link
@@ -47,8 +74,8 @@ export default function Sidebar() {
                   className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
                     isActive
-                      ? "bg-primary/10 text-primary" // Active: Tinted background + Brand Color
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground" // Inactive: Muted text -> Darker on hover
+                      ? "bg-primary/10 text-primary" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
                   <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
@@ -73,22 +100,30 @@ export default function Sidebar() {
       {/* User Footer */}
       <div className="border-t border-border p-4">
         <div className="flex items-center gap-3">
-          {/* Avatar Placeholder */}
-          <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-medium border border-border">
-            CL
+          {/* Avatar: Generated from Email Initials */}
+          <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-medium border border-border select-none">
+            {initials}
           </div>
 
           <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-medium text-foreground">Client Name</p>
-            <p className="truncate text-xs text-muted-foreground">client@company.com</p>
+            <p className="truncate text-sm font-medium text-foreground capitalize">
+              {userName}
+            </p>
+            <p className="truncate text-xs text-muted-foreground" title={user?.email}>
+              {user?.email}
+            </p>
           </div>
 
-          <button
-            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-2 rounded-md transition-colors"
-            title="Log out"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
+          {/* Logout Button Form */}
+          <form action={handleLogout}>
+            <button
+              type="submit"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 p-2 rounded-md transition-colors"
+              title="Log out"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </form>
         </div>
       </div>
     </aside>

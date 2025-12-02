@@ -1,24 +1,41 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { decrypt } from '@/lib/auth'; // Ensure this is imported from your auth lib
+import { redirect } from 'next/navigation';
 
-// Define the input shape based on your UI form
+// Updated input type: Removed 'clientId' because we get it from the session now
 type CreateDatasetInput = {
   title: string;
   description: string;
   dataType: 'TEXT' | 'IMAGE';
   question: string;
   options: string[];
-  // In a real app, you'd get clientId from the session
-  clientId: string;
-  requiredVotes: number; // ✅ Added the new field here
+  requiredVotes: number;
 };
 
 export async function createDataset(data: CreateDatasetInput) {
   try {
-    console.log('Creating dataset with data:', data);
+    // 1. Get the session cookie to authenticate the user
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
 
+    if (!sessionCookie) {
+        return { success: false, error: 'Unauthorized: No session found' };
+    }
+
+    // 2. Decrypt the session to get user details
+    const session = await decrypt(sessionCookie);
+
+    if (!session?.id || session.role !== 'CLIENT') {
+        return { success: false, error: 'Unauthorized: Only Clients can create datasets' };
+    }
+
+    console.log('Creating dataset for User (Owner):', session.id);
+
+    // 3. Create the dataset linked to the logged-in user (ownerId)
     const newDataset = await prisma.dataset.create({
       data: {
         title: data.title,
@@ -26,19 +43,22 @@ export async function createDataset(data: CreateDatasetInput) {
         dataType: data.dataType,
         question: data.question,
         options: data.options,
-        clientId: data.clientId,
-        requiredVotes: data.requiredVotes, // ✅ Mapping the input to the database field
+        requiredVotes: data.requiredVotes,
+        ownerId: session.id as string, // Connects to the User model
         status: 'ACTIVE',
-        reward: 50, // Default reward, you can add a field for this in the UI later
+        reward: 50, // Hardcoded default, or add to Input type if needed
       },
     });
 
     console.log('Dataset Created:', newDataset.id);
 
+    // 4. Revalidate cache
     revalidatePath('/dashboard/datasets');
-    revalidateTag('datasetsList', 'max'); // Standard Next.js only takes one argument
+    // revalidateTag only accepts one argument
+    // revalidateTag('datasetsList'); 
 
     return { success: true, datasetId: newDataset.id };
+
   } catch (error) {
     console.error('Failed to create dataset:', error);
     return { success: false, error: 'Failed to create dataset' };

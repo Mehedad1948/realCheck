@@ -1,4 +1,5 @@
-// prisma/schema.prisma
+// This is your complete, corrected schema.
+// It merges the 'Client' and 'User' models using a 'role' field.
 
 generator client {
   provider = "prisma-client-js"
@@ -10,89 +11,140 @@ datasource db {
 }
 
 // ==========================================
-// 1. THE CLIENT (The Business who pays you)
+// AUTH & USER MODELS (UNIFIED)
 // ==========================================
-model Client {
-  id           String  @id @default(cuid())
-  companyName  String
-  email        String  @unique // Used for Web Dashboard Login
-  passwordHash String? // If you add password login later
-  contactName  String?
 
-  datasets Dataset[] // A client owns multiple datasets
-
-  createdAt DateTime @default(now())
+// ADDED: A Role enum to define the capabilities of a user.
+enum Role {
+  EVALUATOR // A worker who completes tasks.
+  CLIENT // A customer who creates datasets.
+  ADMIN // A superuser for your system.
 }
 
-// ==========================================
-// 2. THE DATA ( The Orders)
-// ==========================================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([provider, providerAccountId])
+}
 
-// ==========================================
-// 3. THE WORKER (The App User)
-// ==========================================
-// We keep this named "User" so your existing Next.js code doesn't break.
-// But conceptually, this is the "Worker".
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// THE UNIFIED USER MODEL
+// This model now represents BOTH workers and clients.
 model User {
-  id         String  @id @default(cuid())
-  telegramId String  @unique
-  username   String?
-  balance    Float   @default(0.0)
-  reputation Float   @default(100.0)
+  id            String    @id @default(cuid())
+  name          String? // For web users, can be company or personal name.
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String? // Avatar from Google or other providers.
+  password      String
+  // Telegram fields remain for workers.
+  telegramId    String?   @unique
+  username      String?
+  firstName     String?
+  lastName      String?
 
-  votes Vote[]
+  // Worker-specific fields.
+  reputation Int   @default(100)
+  balance    Float @default(0.0)
+
+  // ADDED: The role field determines if the user is a CLIENT or an EVALUATOR.
+  role Role @default(EVALUATOR)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // --- RELATIONSHIPS ---
+  accounts Account[]
+  sessions Session[]
+  votes    Vote[]
+
+  // A user with the CLIENT role can own many datasets.
+  datasets Dataset[]
+
+  // REMOVED: The `tasks: Task[]` relation was incorrect and has been removed.
+  // The link between a User and a Task is correctly handled by the `Vote` model.
 }
 
 // ==========================================
-// 4. TASKS & VOTES
+// DATASET, TASK, & VOTE MODELS
 // ==========================================
-model Dataset {
-  id          String @id @default(cuid())
-  title       String // e.g. "Nike - Shoe Sentiment Analysis"
-  description String // e.g. "Select Positive if the user sounds happy."
-  status      String @default("ACTIVE") // ACTIVE, PAUSED, COMPLETED
 
-  // --- TEMPLATE CONFIG (Moved from Task) ---
+model Dataset {
+  id          String   @id @default(cuid())
+  title       String // e.g. "Nike - Shoe Sentiment Analysis"
+  description String? // e.g. "Select Positive if the user sounds happy."
+  status      String   @default("ACTIVE") // ACTIVE, PAUSED, COMPLETED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Template config
   dataType      String // TEXT or IMAGE
   question      String // "Is this sentiment positive?"
-  options       String[] // ["Yes", "No"] (Empty if text input)
-  reward        Int      @default(50) // Base reward for all tasks in this set
-  requiredVotes Int      @default(2)
+  options       Json // Changed to Json for more flexibility e.g., ["Yes", "No"]
+  reward        Int    @default(50)
+  requiredVotes Int    @default(2)
 
-  // Link to the Client who ordered this
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id])
+  // FIXED: The dataset is now linked to the unified User model.
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   tasks Task[]
 
-  createdAt DateTime @default(now())
+  @@index([ownerId])
 }
 
 model Task {
-  id        String  @id @default(uuid())
+  id        String  @id @default(cuid())
   datasetId String
-  dataset   Dataset @relation(fields: [datasetId], references: [id])
+  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
 
-  // Content
-  textContent String?  @map("text_content")
-  imageUrls   String[] @map("image_urls")
+  // Content (Using flexible Json type)
+  content Json
 
-  // Validation
-  correctAnswer String? @map("correct_answer")
-  isValidation  Boolean @default(false) @map("is_validation")
+  // Status & Consensus
+  collectedVotes Int    @default(0)
+  status         String @default("ACTIVE")
 
-  // --- NEW FIELDS FOR DISTRIBUTION LOGIC ---
-  collectedVotes Int    @default(0)         // How many people have voted so far?
-  status         String @default("ACTIVE")  // ACTIVE or COMPLETED
+  // --- NEW FIELD HERE ---
+  imageUrls String[] // Array of strings, optional (nullable)
+  // ----------------------
 
-  votes     Vote[]
+  // Validation fields (optional)
+  correctAnswer String?
+  isValidation  Boolean @default(false)
+
   createdAt DateTime @default(now())
-  
-  // Add an index for speed so "getTasks" is instant
-  @@index([status, collectedVotes]) 
+  votes     Vote[]
+
+  @@index([datasetId])
+  @@index([status, collectedVotes])
 }
 
 model Vote {
@@ -102,8 +154,11 @@ model Vote {
   selection String
   isCorrect Boolean?
 
-  user User @relation(fields: [userId], references: [id])
-  task Task @relation(fields: [taskId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
+  createdAt DateTime @default(now())
+
+  // A user can only vote once on any given task.
   @@unique([userId, taskId])
 }

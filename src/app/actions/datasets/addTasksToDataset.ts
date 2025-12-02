@@ -1,39 +1,82 @@
-// src/app/actions/dataset.ts
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { decrypt } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
 
 export async function addTasksToDataset(
   datasetId: string,
   tasksData: { content: string }[]
 ) {
   try {
-    // 1. Get Dataset type to know where to put the data
+    // 1. Authenticate User
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
+
+    if (!sessionCookie) {
+      return { success: false, error: 'Unauthorized: No session found' };
+    }
+
+    const session = await decrypt(sessionCookie);
+
+    if (!session?.id) {
+      return { success: false, error: 'Unauthorized: Invalid session' };
+    }
+
+    // 2. Fetch Dataset to check Type AND Ownership
     const dataset = await prisma.dataset.findUnique({
       where: { id: datasetId },
-      select: { dataType: true },
+      select: { 
+        dataType: true, 
+        ownerId: true 
+      },
     });
 
-    if (!dataset) throw new Error('Dataset not found');
+    if (!dataset) {
+      return { success: false, error: 'Dataset not found' };
+    }
 
-    // 2. Map the input data to the correct Prisma field
-    // If dataset is TEXT -> content goes to 'textContent'
-    // If dataset is IMAGE -> content goes to 'imageUrls' (as an array)
-    const formattedTasks = tasksData.map((t) => ({
-      datasetId,
-      textContent: dataset.dataType === 'TEXT' ? t.content : null,
-      // For MVP, assuming image input is a single URL string
-      imageUrls: dataset.dataType === 'IMAGE' ? [t.content] : [],
-    }));
+    // 3. Enforce Ownership
+    if (dataset.ownerId !== session.id) {
+      return { success: false, error: 'Forbidden: You do not own this dataset.' };
+    }
 
-    // 3. Bulk Insert
-    await prisma.task.createMany({
+    // 4. Map Input Data to Prisma Schema
+    const formattedTasks = tasksData.map((t) => {
+      const isImageDataset = dataset.dataType === 'IMAGE';
+
+      return {
+        datasetId,
+        
+        // A: Always store the raw input in 'content' (JSON field)
+        content: t.content, 
+
+        // B: If it's an Image dataset, ALSO populate the 'imageUrls' array
+        // This ensures your specific schema field is used.
+        imageUrls: isImageDataset ? [t.content] : [], 
+        
+        status: 'ACTIVE', 
+        collectedVotes: 0
+      };
+    });
+
+    // 5. Bulk Insert
+    const result = await prisma.task.createMany({
       data: formattedTasks,
+      skipDuplicates: true, 
     });
 
-    return { success: true, count: formattedTasks.length };
+    console.log(`Added ${result.count} tasks to dataset ${datasetId}`);
+
+    // 6. Revalidate Cache
+    revalidatePath(`/dashboard/datasets/${datasetId}`);
+    revalidatePath('/dashboard/datasets'); 
+
+    return { success: true, count: result.count };
+
   } catch (error) {
     console.error('Upload error:', error);
-    return { success: false, error: 'Failed to save tasks.' };
+    return { success: false, error: 'Failed to save tasks. Please try again.' };
   }
 }

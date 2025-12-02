@@ -1,142 +1,118 @@
-// app/page.tsx
-"use client";
-
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from '@/components/ui/button';
-import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, XCircle, Coins } from "lucide-react"; // Icon library
 import Link from 'next/link';
 
-// REPLACE WITH YOUR NGROK URL
-const BACKEND_URL = "https://YOUR-NGROK-URL.ngrok-free.app";
-
-export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const [task, setTask] = useState<any>(null);
-  const [userId, setUserId] = useState<number | null>(null);
-
-  useEffect(() => {
-    // 1. Simulate Telegram loading
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-      // Mock user ID for browser testing if not in Telegram
-      setUserId(tg.initDataUnsafe?.user?.id || 99999);
-    }
-
-    // fetchTask();
-  }, []);
-
-  const fetchTask = () => {
-    setLoading(true);
-    fetch(`${BACKEND_URL}/api/task`)
-      .then((res) => res.json())
-      .then((data) => {
-        setTask(data);
-        setLoading(false);
-      })
-      .catch((err) => console.error(err));
-  };
-
-  const submitAnswer = async (answer: string) => {
-    if (!task || !userId) return;
-    setLoading(true);
-
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, taskId: task.id, answer }),
-      });
-      const data = await res.json();
-
-      // Show success feedback (You could use a Toast here)
-      alert(`Earned! New Balance: ${data.newBalance}`);
-
-      // In a real app, you'd fetch the NEXT task here instead of closing
-      window.Telegram.WebApp.close();
-    } catch (e) {
-      alert("Error submitting");
-      setLoading(false);
-    }
-  };
-
+export default function LandingPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center bg-slate-50 p-4">
+    <div className="relative min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/20 overflow-hidden font-sans">
+      
+      {/* --- Background Pattern --- */}
+      {/* A subtle grid pattern that works in both light and dark mode */}
+      <div className="absolute inset-0 -z-10 h-full w-full bg-background">
+        <div className="absolute h-full w-full bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>
+      </div>
 
-      {/* Header */}
-      <div className="w-full max-w-md flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-          <CheckCircle2 className="w-6 h-6 text-blue-600" />
-          RealCheck
+      {/* --- Navigation --- */}
+      <nav className="w-full px-6 py-8 flex justify-between items-center max-w-7xl mx-auto z-10">
+        <div className="flex items-center gap-2">
+          {/* Minimal Logo Icon */}
+          <div className="w-8 h-8 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold text-lg">
+            R
+          </div>
+          <span className="font-bold text-xl tracking-tight">RealCheck</span>
+        </div>
+        
+        <div className="flex items-center gap-6">
+          <Link 
+            href="/login" 
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+          >
+            Log in
+          </Link>
+          <Link 
+            href="/dashboard"
+            className="px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity shadow-lg"
+          >
+            Open Dashboard
+          </Link>
+        </div>
+      </nav>
+
+      {/* --- Hero Section --- */}
+      <main className="flex-grow flex flex-col items-center justify-center px-6 pt-16 pb-24 text-center max-w-5xl mx-auto z-10">
+        
+        <div className="inline-flex items-center rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-muted-foreground backdrop-blur-sm mb-8">
+          <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+          Consensus Engine v1.0 Live
+        </div>
+
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-[1.1]">
+          Data Labeling, <br className="hidden md:block" />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">
+            Verified by Consensus.
+          </span>
         </h1>
-        <Badge variant="secondary" className="flex gap-1">
-          <Coins className="w-3 h-3" />
-          Earn TON
-        </Badge>
+
+        <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10 leading-relaxed">
+          RealCheck leverages distributed human intelligence to validate datasets with cryptographic precision. Ensure quality before you train your models.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <Link 
+            href="/dashboard"
+            className="px-8 py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg hover:brightness-110 transition-all shadow-md hover:shadow-xl active:scale-95"
+          >
+            Start Labeling
+          </Link>
+          <Link 
+            href="#features"
+            className="px-8 py-4 rounded-lg border border-border bg-card hover:bg-muted/50 font-medium text-lg transition-colors"
+          >
+            Learn More
+          </Link>
+        </div>
+
+      </main>
+
+      {/* --- Feature Highlights (Minimal) --- */}
+      <section id="features" className="w-full border-t border-border bg-card/30 backdrop-blur-sm py-20">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
+          <FeatureCard 
+            title="Consensus Validation"
+            description="Tasks require multi-party agreement before being marked as valid. Trust the crowd, verified by code."
+            icon={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>}
+          />
+          <FeatureCard 
+            title="Instant Settlements"
+            description="Workers are rewarded immediately upon reaching consensus. Reputation scores prevent bad actors."
+            icon={<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>}
+          />
+          <FeatureCard 
+            title="Dataset Integrity"
+            description="Immutable records of every vote and validation action. Your data lineage is preserved."
+            icon={<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>}
+          />
+        </div>
+      </section>
+
+      {/* --- Simple Footer --- */}
+      <footer className="py-8 text-center text-sm text-muted-foreground border-t border-border bg-background">
+        <p>© {new Date().getFullYear()} RealCheck Inc. All rights reserved.</p>
+      </footer>
+
+    </div>
+  );
+}
+
+function FeatureCard({ title, description, icon }: { title: string, description: string, icon: React.ReactNode }) {
+  return (
+    <div className="group p-6 rounded-2xl border border-border/50 hover:border-primary/20 hover:bg-muted/30 transition-all duration-300">
+      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          {icon}
+        </svg>
       </div>
-
-      {/* Task Card */}
-      <div className="w-full max-w-md space-y-4">
-        {loading ? (
-          // Loading State (Skeleton)
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-4 w-[200px]" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-24 w-full" />
-            </CardContent>
-            <CardFooter>
-              <Skeleton className="h-10 w-full" />
-            </CardFooter>
-          </Card>
-        ) : (
-          // Active Task State
-          <Card className="shadow-lg border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Task #{task.id}</CardTitle>
-              <CardDescription>
-                Read the text below and select the best label.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-slate-100 rounded-lg border border-slate-200">
-                <p className="text-slate-800 font-medium text-lg leading-relaxed">
-                  "{task.content}"
-                </p>
-              </div>
-              <p className="text-sm text-slate-500 font-medium text-center">
-                {task.question}
-              </p>
-            </CardContent>
-
-            <CardFooter className="flex flex-col gap-3">
-              {task.options.map((opt: string) => (
-                <Button
-                  key={opt}
-                  onClick={() => submitAnswer(opt)}
-                  className="w-full text-lg py-6 bg-blue-600 hover:bg-blue-700 transition-all"
-                >
-                  {opt}
-                </Button>
-              ))}
-            </CardFooter>
-          </Card>
-        )}
-      </div>
-
-      <div className=' mt-4 w-full max-w-md mx-auto'>
-        <Link className='w-full' href={'/app'}>
-          <Button variant={'secondary'} className='w-full'>
-            App
-          </Button>
-        </Link>
-      </div>
-    </main>
+      <h3 className="text-xl font-bold mb-2 text-foreground">{title}</h3>
+      <p className="text-muted-foreground leading-relaxed">{description}</p>
+    </div>
   );
 }

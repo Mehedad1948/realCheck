@@ -2,14 +2,28 @@ import { ReactNode, Suspense } from 'react';
 import Sidebar from './Sidebar';
 import { Menu } from 'lucide-react'; // Mobile menu icon
 import ThemeToggle from '@/components/ui/ThemeToggle.tsx';
+import { getSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+
     return (
+
+
         <div className="min-h-screen ">
 
             {/* Sidebar - Hidden on Mobile, Visible on Desktop */}
             <Suspense>
-                <Sidebar />
+                {(async () => {
+                    const session = await getSession();
+
+                    // Double check security (Middleware handles this, but good for type safety)
+                    if (!session || session.role !== "CLIENT") {
+                        redirect("/login");
+                    }
+                    return <Sidebar user={session} />
+                })()}
+
             </Suspense>
 
             {/* Mobile Header */}

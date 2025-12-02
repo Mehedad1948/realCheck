@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createDataset } from '@/app/actions/datasets';
+// Make sure this path matches where you saved the server action (dataset.ts or datasets.ts)
 
 export default function CreateDatasetPage() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function CreateDatasetPage() {
   const [dataType, setDataType] = useState<'TEXT' | 'IMAGE'>('TEXT');
   const [question, setQuestion] = useState('');
 
-  // ✅ NEW STATE: Default to 2 as per schema
+  // Default to 2 as per schema recommendation
   const [requiredVotes, setRequiredVotes] = useState<number>(2);
 
   const [options, setOptions] = useState<string[]>(['', '']);
@@ -33,17 +34,16 @@ export default function CreateDatasetPage() {
     setLoading(true);
 
     const cleanOptions = options.filter(opt => opt.trim() !== '');
-    const MOCK_CLIENT_ID = "cmiis4nn200017yfjmvhkre56";
 
     try {
+      // ✅ Updated Call: No clientId passed here. 
+      // The server action handles authentication securely via cookies.
       const result = await createDataset({
         title,
         description,
         dataType,
         question,
         options: cleanOptions,
-        clientId: MOCK_CLIENT_ID,
-        // ✅ Pass the new value to server action
         requiredVotes: Number(requiredVotes)
       });
 
@@ -53,7 +53,8 @@ export default function CreateDatasetPage() {
         alert("Error: " + result.error);
       }
     } catch (err) {
-      alert("Unexpected error");
+      console.log('Submission Error:', err);
+      alert("An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -114,8 +115,8 @@ export default function CreateDatasetPage() {
               type="button"
               onClick={() => setDataType('TEXT')}
               className={`p-4 border rounded-lg text-center transition-all ${dataType === 'TEXT'
-                  ? 'border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary'
-                  : 'border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground'
+                ? 'border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary'
+                : 'border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground'
                 }`}
             >
               📝 Text Analysis
@@ -124,8 +125,8 @@ export default function CreateDatasetPage() {
               type="button"
               onClick={() => setDataType('IMAGE')}
               className={`p-4 border rounded-lg text-center transition-all ${dataType === 'IMAGE'
-                  ? 'border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary'
-                  : 'border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground'
+                ? 'border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary'
+                : 'border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground'
                 }`}
             >
               🖼️ Image Labeling
@@ -144,14 +145,13 @@ export default function CreateDatasetPage() {
             />
           </div>
 
-          {/* ✅ NEW: Required Votes Input with Tooltip */}
+          {/* Required Votes Input */}
           <div className="relative">
             <div className="flex items-center gap-2 mb-2">
               <label className="block text-sm font-medium text-muted-foreground">
                 Required Votes per Task
               </label>
 
-              {/* Tooltip (Same as before) */}
               <div className="group relative flex items-center justify-center cursor-help">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground hover:text-primary transition-colors">
                   <circle cx="12" cy="12" r="10"></circle>
