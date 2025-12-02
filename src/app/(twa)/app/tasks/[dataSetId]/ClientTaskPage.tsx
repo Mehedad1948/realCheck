@@ -26,7 +26,6 @@ export type TaskItem = {
 }
 
 export default function ClientTaskPage({ tasks, datasetData }: { tasks: TaskItem[], datasetData: Dataset }) {
-    console.log('🎮🎮🎮', datasetData);
 
     const router = useRouter();
     const [currentIndex, setCurrentIndex] = useState(0);
