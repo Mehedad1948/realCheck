@@ -4,50 +4,36 @@ import { getSessionUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function getTasksForUser(datasetId?: string) {
-  // 1. Secure Session Check
   const user = await getSessionUser();
   if (!user) return [];
 
-  // CONFIGURATION
   const BATCH_SIZE = 10;
-  const POOL_SIZE = 500;
 
   try {
-    // 2. Fetch Candidates
     const candidateTasks = await prisma.task.findMany({
       where: {
-        // Filter A: Specific Dataset (if requested)
         ...(datasetId ? { datasetId } : {}),
-
-        // Filter B: Ensure the DATASET itself is Active
+        
+        // Ensure the Dataset is Active
         dataset: {
-          status: 'ACTIVE', 
+          status: 'ACTIVE',
         },
+        
+        // Ensure Task is not finished (using PENDING based on schema suggestion)
+        status: 'PENDING',
 
-        // Filter C: Task is not already finished
-        status: {
-            not: 'COMPLETED'
-        },
-
-        // Filter D: User has NOT voted on this task yet
+        // User hasn't voted yet
         votes: {
           none: { userId: user.id },
         },
       },
-      orderBy: {
-        collectedVotes: 'asc', // Prioritize tasks needing votes
-      },
-      take: POOL_SIZE,
-      select: {
-        id: true,
-        content: true, 
-        // REMOVED 'imageUrls: true' because your Prisma Client doesn't see it yet.
-        // We will derive it from 'content' below.
-        
+      orderBy: { collectedVotes: 'asc' },
+      take: 500, // Pool size
+      include: {
         dataset: {
           select: {
             question: true,
-            options: true,
+            options: true, // This is now automatically string[]
             dataType: true,
             reward: true,
           },
@@ -57,35 +43,20 @@ export async function getTasksForUser(datasetId?: string) {
 
     if (candidateTasks.length === 0) return [];
 
-    // 3. Shuffle
     const shuffled = candidateTasks.sort(() => 0.5 - Math.random());
 
-    // 4. Slice & Map
-    return shuffled.slice(0, BATCH_SIZE).map((task) => {
+    return shuffled.slice(0, BATCH_SIZE).map((task) => ({
+      id: task.id,
       
-      // Safe cast for content
-      const contentString = (task.content as string) || "";
+      // DIRECT ASSIGNMENT (No casting needed anymore)
+      content: task.content, 
+      imageUrls: task.imageUrls, 
 
-      // FALLBACK LOGIC:
-      // If it's an IMAGE dataset, the 'content' field stores the URL string.
-      // We wrap it in an array to mimic the expected 'imageUrls' format.
-      let derivedImages: string[] = [];
-      if (task.dataset.dataType === 'IMAGE' && contentString) {
-        derivedImages = [contentString];
-      }
-
-      return {
-        id: task.id,
-        content: contentString,
-        imageUrls: derivedImages, // Populated from content logic
-        
-        // Flatten dataset config
-        question: task.dataset.question,
-        options: (task.dataset.options as string[]) ?? [],
-        dataType: task.dataset.dataType,
-        reward: task.dataset.reward,
-      };
-    });
+      question: task.dataset.question,
+      options: task.dataset.options, // This is already string[]
+      dataType: task.dataset.dataType,
+      reward: task.dataset.reward,
+    }));
 
   } catch (error) {
     console.error('Error fetching tasks:', error);

@@ -27,15 +27,19 @@ export async function loginAction(prevState: any, formData: FormData) {
   });
 
   console.log('🐞🐞🐞', user);
-  
+
   if (!user) {
     return { error: 'Invalid credentials' };
   }
 
   // 2. Verify Password
-  const isPasswordValid = await comparePassword(password, user.password);
-  if (!isPasswordValid) {
-    return { error: 'Invalid credentials' };
+  if (user.password) {
+    const isPasswordValid = await comparePassword(password, user.password);
+    if (!isPasswordValid) {
+      return { error: 'Invalid credentials' };
+    }
+  } else {
+    return { error: 'Use Telegram login' };
   }
 
   // 3. Create JWT Session

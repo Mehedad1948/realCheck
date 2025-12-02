@@ -63,7 +63,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String? // Avatar from Google or other providers.
-  password      String
+  password      String?
   // Telegram fields remain for workers.
   telegramId    String?   @unique
   username      String?
@@ -107,7 +107,7 @@ model Dataset {
   // Template config
   dataType      String // TEXT or IMAGE
   question      String // "Is this sentiment positive?"
-  options       Json // Changed to Json for more flexibility e.g., ["Yes", "No"]
+  options       String[] 
   reward        Int    @default(50)
   requiredVotes Int    @default(2)
 
@@ -126,7 +126,7 @@ model Task {
   dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
 
   // Content (Using flexible Json type)
-  content Json
+    content String
 
   // Status & Consensus
   collectedVotes Int    @default(0)

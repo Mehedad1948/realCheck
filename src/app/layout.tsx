@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from '@/components/ui/sonner';
 import ThemeToggle from '@/components/ui/ThemeToggle.tsx';
+import { Suspense } from 'react';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,10 @@ export default function RootLayout({
       >
         <ThemeToggle />
         <Toaster />
-        {children}
+        <Suspense>
+
+          {children}
+        </Suspense>
       </body>
     </html>
   );

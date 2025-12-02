@@ -15,12 +15,15 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SwipeWrapper } from '@/components/tools/SwipeWrapper';
 
-export type TaskItem =
-    Pick<Task, "id" | "textContent" | "imageUrls"> &
-    Pick<Dataset, "question" | "options" | "dataType" | 'reward'> & {
-        // If you specifically wanted 'status' to be optional:
-        status?: string;
-    };
+export type TaskItem = {
+    id: string;
+    content: string;
+    imageUrls: string[];
+    question: string;
+    options: string[];
+    dataType: string;
+    reward: number;
+}
 
 export default function ClientTaskPage({ tasks, datasetData }: { tasks: TaskItem[], datasetData: Dataset }) {
     const router = useRouter();
@@ -149,11 +152,11 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: TaskItem
             );
         }
 
-        if (currentTask.textContent) {
+        if (currentTask.content) {
             return (
                 <div className="bg-secondary/30 p-6 rounded-lg border border-border pointer-events-none">
                     <p className="text-lg font-medium leading-relaxed text-foreground">
-                        &ldquo;{currentTask.textContent}&rdquo;
+                        &ldquo;{currentTask.content}&rdquo;
                     </p>
                 </div>
             );
@@ -225,7 +228,7 @@ export default function ClientTaskPage({ tasks, datasetData }: { tasks: TaskItem
                     <CardFooter className="flex flex-col gap-4">
                         {/* Options Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                            {datasetData?.options?.map((option) => {
+                            {(datasetData?.options)?.map((option) => {
                                 const isSelected = userVotes[currentTask.id] === option;
                                 return (
                                     <Button

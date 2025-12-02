@@ -96,7 +96,7 @@ export default function LandingPage() {
 
       {/* --- Simple Footer --- */}
       <footer className="py-8 text-center text-sm text-muted-foreground border-t border-border bg-background">
-        <p>© {new Date().getFullYear()} RealCheck Inc. All rights reserved.</p>
+        <p>© 2025 RealCheck Inc. All rights reserved.</p>
       </footer>
 
     </div>
