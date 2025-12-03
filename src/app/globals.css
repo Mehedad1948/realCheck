@@ -1,7 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* Updated variant: Now we need a variant for light mode if you want to toggle back */
+@custom-variant light (&:is(.light *));
 
 @theme inline {
   --color-background: var(--background);
@@ -28,43 +29,11 @@
   --radius-lg: var(--radius);
 }
 
-/* --- 1. TELEGRAM LIGHT SIMULATION (Default) --- */
-/* These colors mimic the standard Telegram Light theme */
+/* --- 1. TELEGRAM DARK SIMULATION (Default) --- */
+/* Moved from .dark to :root to make it the default */
 :root {
   --radius: 0.5rem;
-  
-  --background: #ffffff;         /* Telegram Bg */
-  --foreground: #000000;         /* Telegram Text */
-  
-  --card: #ffffff;
-  --card-foreground: #000000;
-  
-  --popover: #ffffff;
-  --popover-foreground: #000000;
-  
-  --primary: #3390ec;            /* Telegram Blue */
-  --primary-foreground: #ffffff;
-  
-  --secondary: #f4f4f5;          /* Telegram Secondary Bg */
-  --secondary-foreground: #000000;
-  
-  --muted: #f4f4f5;
-  --muted-foreground: #707579;   /* Telegram Hint */
-  
-  --accent: #f4f4f5;
-  --accent-foreground: #000000;
-  
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  
-  --border: #dfe1e5;             /* Telegram Divider */
-  --input: #dfe1e5;
-  --ring: #3390ec;
-}
 
-/* --- 2. TELEGRAM DARK SIMULATION (Manual Toggle) --- */
-/* These colors mimic the standard Telegram Dark theme */
-.dark {
   --background: #1c1c1e;         /* Telegram Dark Bg */
   --foreground: #ffffff;         /* Telegram Text */
   
@@ -92,6 +61,38 @@
   --border: #3d3d41;             /* Telegram Divider */
   --input: #3d3d41;
   --ring: #8774e1;
+}
+
+/* --- 2. TELEGRAM LIGHT SIMULATION (Manual Toggle) --- */
+/* Moved from :root to .light class */
+.light {
+  --background: #ffffff;         /* Telegram Bg */
+  --foreground: #000000;         /* Telegram Text */
+  
+  --card: #ffffff;
+  --card-foreground: #000000;
+  
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  
+  --primary: #3390ec;            /* Telegram Blue */
+  --primary-foreground: #ffffff;
+  
+  --secondary: #f4f4f5;          /* Telegram Secondary Bg */
+  --secondary-foreground: #000000;
+  
+  --muted: #f4f4f5;
+  --muted-foreground: #707579;   /* Telegram Hint */
+  
+  --accent: #f4f4f5;
+  --accent-foreground: #000000;
+  
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  --border: #dfe1e5;             /* Telegram Divider */
+  --input: #dfe1e5;
+  --ring: #3390ec;
 }
 
 /* --- 3. ACTUAL TELEGRAM INJECTION OVERRIDE --- */

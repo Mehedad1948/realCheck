@@ -35,7 +35,7 @@ export default function CreateDatasetPage() {
 
     const cleanOptions = options.filter(opt => opt.trim() !== '');
 
-    try {
+  try {
       // ✅ Updated Call: No clientId passed here. 
       // The server action handles authentication securely via cookies.
       const result = await createDataset({
