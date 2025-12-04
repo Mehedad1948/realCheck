@@ -6,7 +6,6 @@ import { prisma } from '@/lib/prisma';
 export async function getTasksForUser(datasetId?: string) {
   // 1. Secure Session Check
   const user = await getSessionUser();
-  console.log('🚀🚀🚀 User', user);
 
   if (!user) return [];
 
