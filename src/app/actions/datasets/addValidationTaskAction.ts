@@ -1,13 +1,19 @@
 'use server';
 
 import { getSession } from '@/lib/auth'; // Assuming you have this
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
-export async function addValidationTaskAction(prevState: any, formData: FormData) {
+export async function addValidationTaskAction(
+  prevState: any,
+  formData: FormData
+) {
   const session = await getSession();
   if (session?.role !== 'CLIENT' || !session.id) {
-    return { success: false, message: 'Unauthorized: Only clients can add tasks.' };
+    return {
+      success: false,
+      message: 'Unauthorized: Only clients can add tasks.',
+    };
   }
 
   const datasetId = formData.get('datasetId') as string;
@@ -30,7 +36,12 @@ export async function addValidationTaskAction(prevState: any, formData: FormData
 
     // Validation Check: Ensure the provided answer is a valid option
     if (!dataset.options.includes(correctAnswer)) {
-      return { success: false, message: `The correct answer must be one of [${dataset.options.join(', ')}].` };
+      return {
+        success: false,
+        message: `The correct answer must be one of [${dataset.options.join(
+          ', '
+        )}].`,
+      };
     }
 
     await prisma.task.create({
@@ -48,10 +59,12 @@ export async function addValidationTaskAction(prevState: any, formData: FormData
     // Revalidate the dataset page to show the new task (optional)
     revalidatePath(`/dashboard/datasets/${datasetId}`);
 
-    return { success: true, message: 'Validation question added successfully!' };
-
+    return {
+      success: true,
+      message: 'Validation question added successfully!',
+    };
   } catch (error) {
-    console.error("Failed to add validation task:", error);
+    console.error('Failed to add validation task:', error);
     return { success: false, message: 'A server error occurred.' };
   }
 }
