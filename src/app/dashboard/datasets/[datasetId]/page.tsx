@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { Button } from '@/components/ui/button';
-import ClearTasksButton from './ClearTasksButton';
+import { DatasetStatusBadge } from './DatasetStatusBadge';
+import { ExportResultsButton } from './ExportResultsButton';
+import { ClearTasksButton } from './ClearTasksButton';
 
 // Helper to format dates
 const formatDate = (date: Date) => {
@@ -69,7 +71,9 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
 
         <div className="flex gap-3 items-center">
           {/* Clear Button Component */}
-          <ClearTasksButton datasetId={dataset.id} hasTasks={hasTasks} />
+          <ExportResultsButton datasetId={datasetId} />
+
+
 
           {hasTasks && (
             <Link
@@ -79,12 +83,7 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
               Add More Data
             </Link>
           )}
-          <div className={`px-3 py-1 rounded-full flex items-center justify-center text-xs font-bold border ${dataset.status === 'ACTIVE'
-            ? 'bg-green-500/10 text-green-600 border-green-500/20'
-            : 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20'
-            }`}>
-            {dataset.status}
-          </div>
+          <DatasetStatusBadge datasetId={dataset.id} initialStatus={dataset.status} />
         </div>
       </header>
 
@@ -216,6 +215,11 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
                 Showing first 5 of {totalTasks} tasks.
               </p>
             </div>
+          </div>
+
+          <div>
+
+            <ClearTasksButton datasetId={dataset.id} hasTasks={hasTasks} />
           </div>
 
         </div>

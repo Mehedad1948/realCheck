@@ -16,7 +16,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             <Suspense>
                 {(async () => {
                     const session = await getSession();
-
+                    
                     // Double check security (Middleware handles this, but good for type safety)
                     if (!session || session.role !== "CLIENT") {
                         redirect("/login");
