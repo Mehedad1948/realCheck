@@ -45,7 +45,6 @@ export function ExportResultsButton({ datasetId }: Props) {
 
             toast.success(`${format} export downloaded successfully`);
         } catch (e) {
-            console.error('🎮🎮', e);
             toast.error("An unexpected error occurred during export");
         } finally {
             setIsExporting(false);
@@ -64,7 +63,6 @@ export function ExportResultsButton({ datasetId }: Props) {
             'TaskId', 'Status', 'Content', 'ImageURL', 'IsValidation',
             'CorrectAnswer', 'WorkerId', 'WorkerReputation', 'WorkerAnswer', 'IsVoteCorrect', 'VoteTime'
         ];
-        console.log('➡️➡️➡️', tasks);
 
         const rows = tasks.flatMap(task =>
             task.votes.map((vote: any) => [
