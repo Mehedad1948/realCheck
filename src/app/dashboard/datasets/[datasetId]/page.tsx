@@ -1,10 +1,18 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils'; // Import cn for conditional classes
 import { DatasetStatusBadge } from './DatasetStatusBadge';
 import { ExportResultsButton } from './ExportResultsButton';
 import { ClearTasksButton } from './ClearTasksButton';
+
+// Helper to format currency
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
+};
 
 // Helper to format dates
 const formatDate = (date: Date) => {
@@ -14,15 +22,18 @@ const formatDate = (date: Date) => {
 };
 
 export default async function DatasetDetailsPage({ params }: { params: Promise<{ datasetId: string }> }) {
-  // Await params for Next.js 15 compatibility
   const { datasetId } = await params;
 
-  // 1. Fetch Dataset Details + First 5 Tasks for Preview
+  // 1. Fetch Dataset + Owner Balance + Tasks Preview
+  // We include 'owner' to check their balance against the cost
   const dataset = await prisma.dataset.findUnique({
     where: { id: datasetId },
     include: {
+      owner: {
+        select: { balance: true }, 
+      },
       tasks: {
-        take: 5, // Just for preview
+        take: 5,
         orderBy: { createdAt: 'asc' },
       },
       _count: {
@@ -35,8 +46,9 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
     return notFound();
   }
 
-  // 2. Calculate Specific Stats
+  // 2. Calculate Stats & Financials
   const totalTasks = dataset._count.tasks;
+  const hasTasks = totalTasks > 0;
 
   const completedTasksCount = await prisma.task.count({
     where: {
@@ -46,12 +58,22 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
   });
 
   const progress = totalTasks > 0 ? Math.round((completedTasksCount / totalTasks) * 100) : 0;
-  const hasTasks = totalTasks > 0;
+
+  // --- FINANCIAL CALCULATION ---
+  // How many tasks are left to be fully funded/completed?
+  const remainingTasks = totalTasks - completedTasksCount;
+  
+  // Cost = Remaining Tasks * Votes Per Task * Reward Per Vote
+  // (Assuming dataset.reward is the price per single vote)
+  const estimatedCostToFinish = remainingTasks * dataset.requiredVotes * dataset.reward;
+  
+  const userBalance = dataset.owner.balance;
+  const isInsufficient = userBalance < estimatedCostToFinish && remainingTasks > 0;
 
   return (
     <div className="min-h-screen bg-background p-6 text-foreground transition-colors duration-300">
 
-      {/* --- Breadcrumb / Back Navigation --- */}
+      {/* --- Breadcrumb --- */}
       <div className="mb-6">
         <Link
           href="/dashboard/datasets"
@@ -70,10 +92,7 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
         </div>
 
         <div className="flex gap-3 items-center">
-          {/* Clear Button Component */}
           <ExportResultsButton datasetId={datasetId} />
-
-
 
           {hasTasks && (
             <Link
@@ -90,7 +109,20 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
       {/* --- Stats Grid --- */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Tasks" value={totalTasks.toString()} icon="📦" />
-        <StatCard label="Data Type" value={dataset.dataType} icon={dataset.dataType === 'IMAGE' ? '🖼️' : '📝'} />
+        
+        {/* --- DYNAMIC FINANCIAL STAT CARD --- */}
+        {/* Replaces the "Data Type" card as requested */}
+        <StatCard 
+          label={isInsufficient ? "Insufficient Funds" : "Est. Cost to Finish"} 
+          value={formatCurrency(estimatedCostToFinish)}
+          icon={isInsufficient ? "⚠️" : "💰"}
+          // Pass styling props for the warning state
+          className={isInsufficient ? "border-destructive/50 bg-destructive/5" : ""}
+          iconClassName={isInsufficient ? "bg-destructive/10 text-destructive" : "bg-green-500/10 text-green-600"}
+          valueClassName={isInsufficient ? "text-destructive font-extrabold" : ""}
+          labelClassName={isInsufficient ? "text-destructive" : ""}
+        />
+
         <StatCard label="Required Consensus" value={`${dataset.requiredVotes} votes`} icon="🤝" />
         <StatCard label="Created On" value={formatDate(dataset.createdAt)} icon="📅" />
       </div>
@@ -98,7 +130,7 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
       {/* --- CONDITIONAL CONTENT AREA --- */}
 
       {!hasTasks ? (
-        /* --- EMPTY STATE: Call to Action --- */
+        /* --- EMPTY STATE --- */
         <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border rounded-xl bg-card/50 text-center">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
@@ -116,7 +148,7 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
         </div>
 
       ) : (
-        /* --- POPULATED STATE: Preview & Progress --- */
+        /* --- POPULATED STATE --- */
         <div className="space-y-8">
 
           {/* Progress Bar */}
@@ -157,7 +189,6 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
                 </thead>
                 <tbody>
                   {dataset.tasks.map((task) => {
-                    // Explicitly cast content to string to avoid "Object not valid as React child"
                     const contentString = task.content as string;
 
                     return (
@@ -167,7 +198,6 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
                         </td>
                         <td className="px-6 py-4 font-medium max-w-md truncate">
                           {dataset.dataType === 'IMAGE' ? (
-                            /* IMAGE DATA TYPE Logic */
                             <div className="flex items-center gap-2 text-blue-500">
                               <span>🖼️</span>
                               {task.imageUrls && task.imageUrls.length > 0 ? (
@@ -184,7 +214,6 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
                               )}
                             </div>
                           ) : (
-                            /* TEXT DATA TYPE Logic */
                             <span title={contentString || ''}>
                               {contentString || <span className="italic text-muted-foreground">Empty text</span>}
                             </span>
@@ -209,7 +238,6 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
               </table>
             </div>
 
-            {/* Table Footer */}
             <div className="p-4 bg-muted/30 text-center border-t border-border">
               <p className="text-xs text-muted-foreground">
                 Showing first 5 of {totalTasks} tasks.
@@ -218,7 +246,6 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
           </div>
 
           <div>
-
             <ClearTasksButton datasetId={dataset.id} hasTasks={hasTasks} />
           </div>
 
@@ -229,16 +256,27 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
   );
 }
 
-// --- Small Helper Component for Stats ---
-function StatCard({ label, value, icon }: { label: string, value: string | number, icon: string }) {
+// --- UPDATED STAT CARD COMPONENT ---
+// Added className props to support the red "Insufficient" styling
+interface StatCardProps { 
+  label: string; 
+  value: string | number; 
+  icon: string;
+  className?: string;
+  iconClassName?: string;
+  valueClassName?: string;
+  labelClassName?: string;
+}
+
+function StatCard({ label, value, icon, className, iconClassName, valueClassName, labelClassName }: StatCardProps) {
   return (
-    <div className="bg-card border border-border p-4 rounded-lg shadow-sm flex items-center gap-4">
-      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-lg">
+    <div className={cn("bg-card border border-border p-4 rounded-lg shadow-sm flex items-center gap-4 transition-colors", className)}>
+      <div className={cn("w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-lg transition-colors", iconClassName)}>
         {icon}
       </div>
       <div>
-        <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wide">{label}</p>
-        <p className="text-lg font-bold text-foreground">{value}</p>
+        <p className={cn("text-xs text-muted-foreground uppercase font-semibold tracking-wide", labelClassName)}>{label}</p>
+        <p className={cn("text-lg font-bold text-foreground", valueClassName)}>{value}</p>
       </div>
     </div>
   );
