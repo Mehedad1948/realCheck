@@ -28,8 +28,8 @@ interface SidebarProps {
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'My Datasets', href: '/dashboard/datasets', icon: Database },
-  { name: 'Guide', href: '/dashboard/guide', icon: CreditCard },
   { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
+  { name: 'Guide', href: '/dashboard/guide', icon: CreditCard },
   // { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
