@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'; // Import cn for conditional classes
 import { DatasetStatusBadge } from './DatasetStatusBadge';
 import { ExportResultsButton } from './ExportResultsButton';
 import { ClearTasksButton } from './ClearTasksButton';
-import { EditableField } from '@/components/ui/EditableField';
+import { EditableField } from '@/app/dashboard/datasets/[datasetId]/EditableField';
 import { ReactNode } from 'react';
 
 // Helper to format currency

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logoutAction } from '../actions/auth/logout';
+import { useHashParams } from '@/hooks/useHashParams';
 
 // Updated Interface to include balance
 interface SidebarProps {
@@ -28,18 +29,18 @@ const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'My Datasets', href: '/dashboard/datasets', icon: Database },
   { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  // { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export default function Sidebar({ user, balance }: SidebarProps) {
   const pathname = usePathname();
-
+  const { setHashParams } = useHashParams()
   const handleLogout = async () => {
     await logoutAction();
   };
 
-  const initials = user?.email 
-    ? user.email.substring(0, 2).toUpperCase() 
+  const initials = user?.email
+    ? user.email.substring(0, 2).toUpperCase()
     : '??';
 
   const userName = user?.email ? user.email.split('@')[0] : 'Guest';
@@ -65,12 +66,12 @@ export default function Sidebar({ user, balance }: SidebarProps) {
 
       {/* Navigation Links */}
       <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-6">
-        
+
         {/* Main Links */}
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-            
+
             return (
               <li key={item.name}>
                 <Link
@@ -78,7 +79,7 @@ export default function Sidebar({ user, balance }: SidebarProps) {
                   className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-sm" 
+                      ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
@@ -104,21 +105,21 @@ export default function Sidebar({ user, balance }: SidebarProps) {
       {/* --- NEW: Wallet / Balance Section --- */}
       <div className="px-4 pb-4">
         <div className="bg-muted/40 border border-border rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                    <Wallet className="w-3 h-3" />
-                    Available Balance
-                </span>
-                <Link 
-                    href="/dashboard/billing" 
-                    className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded hover:bg-primary/20 transition-colors"
-                >
-                    Top Up
-                </Link>
-            </div>
-            <p className="text-lg font-bold text-foreground tracking-tight">
-                {formattedBalance}
-            </p>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+              <Wallet className="w-3 h-3" />
+              Available Balance
+            </span>
+            <button
+              onClick={() => { setHashParams({ topUp: true }) }}
+              className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded hover:bg-primary/20 transition-colors"
+            >
+              Top Up
+            </button>
+          </div>
+          <p className="text-lg font-bold text-foreground tracking-tight">
+            {formattedBalance}
+          </p>
         </div>
       </div>
 

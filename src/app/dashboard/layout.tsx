@@ -1,13 +1,18 @@
 // src/app/dashboard/layout.tsx
 import { ReactNode, Suspense } from 'react';
 import Sidebar from './Sidebar';
-import { Menu } from 'lucide-react'; 
+import { Menu } from 'lucide-react';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma'; // Ensure you import your prisma instance
 import { redirect } from 'next/navigation';
+import { ResponsiveModal } from '@/components/ui/ResponsiveModal';
+import dynamic from 'next/dynamic';
+import { TopUpModal } from './TopUpModal';
+
+// const TopUpModal = dynamic(() => import('./TopUpModal'))
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-    
+
     // 1. Fetch Session
     const session = await getSession();
 
@@ -31,8 +36,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
             {/* Sidebar - Pass session AND fresh balance */}
             <Suspense fallback={<div className="w-64 fixed inset-y-0 bg-muted/20" />}>
-                 <Sidebar user={session} balance={currentBalance} />
+                <Sidebar user={session} balance={currentBalance} />
             </Suspense>
+
+            <TopUpModal balance={currentBalance} />
 
             {/* Mobile Header */}
             <header className="sticky top-0 z-20 flex h-16 items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:hidden">

@@ -6,6 +6,9 @@ export default function layout({ children }: { children: ReactNode }) {
             <Suspense>
                 {children}
             </Suspense>
+            <Suspense>
+          
+            </Suspense>
         </div>
     );
 }
