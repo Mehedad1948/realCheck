@@ -3,141 +3,199 @@ import { PrismaClient, Role } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting seeding...');
+  console.log('🌱 Starting database seeding...');
 
-  // 1. CLEANUP: Remove existing data to avoid conflicts if you re-run the seed
+  // ==========================================
+  // 1. CLEANUP (Delete existing data)
+  // ==========================================
   // We delete in order to respect foreign key constraints
   await prisma.vote.deleteMany();
   await prisma.task.deleteMany();
   await prisma.dataset.deleteMany();
-  await prisma.user.deleteMany(); // This cascades to Account/Session usually, but good to be safe
+  await prisma.account.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.user.deleteMany();
 
-  console.log('🧹 Cleaned up existing data.');
+  console.log('🧹 Previous data cleared.');
 
+  // ==========================================
   // 2. CREATE USERS
-  // Create a CLIENT user (Dataset Owner)
-  const clientUser = await prisma.user.create({
+  // ==========================================
+
+  // --- Admin User ---
+  const admin = await prisma.user.create({
     data: {
-      name: 'Client User',
-      email: 'client@realcheck.io',
+      name: 'System Admin',
+      email: 'admin@example.com',
+      role: Role.ADMIN,
+      password: 'password123', // In a real app, hash this using bcrypt!
+      emailVerified: new Date(),
+    },
+  });
+
+  // --- Client User (Dataset Owner) ---
+  const client = await prisma.user.create({
+    data: {
+      name: 'Nike Corp',
+      email: 'client@nike.com',
       role: Role.CLIENT,
-      password: '',
-      image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=client',
-      balance: 1000.0, // Give them some starting funds
+      password: 'password123',
+      balance: 1000.00, // Client needs money to pay for datasets
+      emailVerified: new Date(),
     },
   });
 
-  // Create an EVALUATOR user (Worker)
-  const evaluatorUser = await prisma.user.create({
+  // --- Evaluator User 1 ---
+  const worker1 = await prisma.user.create({
     data: {
-      name: 'Evaluator User',
-      email: 'evaluator@realcheck.io',
+      name: 'John Worker',
+      email: 'worker1@example.com',
+      username: 'johnny_w',
+      telegramId: '123456789',
       role: Role.EVALUATOR,
-      password: '',
-      image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=evaluator',
+      password: 'password123',
       reputation: 100,
-      balance: 0.0,
-      telegramId: '123456789', // Example Telegram ID
+      balance: 5.50,
     },
   });
 
-  console.log(
-    `👤 Created Users: Client (${clientUser.id}), Evaluator (${evaluatorUser.id})`
-  );
+  // --- Evaluator User 2 ---
+  const worker2 = await prisma.user.create({
+    data: {
+      name: 'Jane Tasker',
+      email: 'worker2@example.com',
+      username: 'jane_t',
+      telegramId: '987654321',
+      role: Role.EVALUATOR,
+      password: 'password123',
+      reputation: 110,
+      balance: 12.00,
+    },
+  });
 
-  // 3. CREATE DATASETS
-  // Dataset 1: Text Sentiment Analysis (Multiple Choice)
+  console.log('👥 Users created: Admin, Client, and 2 Evaluators.');
+
+  // ==========================================
+  // 3. CREATE DATASETS & TASKS
+  // ==========================================
+
+  // --- Dataset A: Sentiment Analysis (Text) ---
   const textDataset = await prisma.dataset.create({
     data: {
-      title: 'Product Review Sentiment',
-      description:
-        'Analyze customer reviews and determine if they are positive, negative, or neutral.',
+      title: 'Nike - Shoe Sentiment Analysis',
+      description: 'Read the review and determine if the customer is happy.',
       dataType: 'TEXT',
-      question: 'What is the sentiment of this review?',
-      options: ['Positive', 'Neutral', 'Negative'], // JSON array
-      reward: 50,
-      requiredVotes: 3,
-      status: 'ACTIVE',
-      ownerId: clientUser.id,
+      question: 'Is this review positive or negative?',
+      options: ['Positive', 'Negative', 'Neutral'],
+      reward: 50, // 0.50 currency units
+      requiredVotes: 2,
+      ownerId: client.id,
+      tasks: {
+        create: [
+          {
+            content: 'I absolutely love these running shoes! They fit perfectly.',
+            status: 'ACTIVE',
+            imageUrls: [], // Empty array for text tasks
+          },
+          {
+            content: 'The sole fell apart after two days. Terrible quality.',
+            status: 'ACTIVE',
+            imageUrls: [],
+          },
+          {
+            content: 'They are okay, but shipping took too long.',
+            status: 'ACTIVE',
+            imageUrls: [],
+          },
+        ],
+      },
     },
   });
 
-  // Dataset 2: Image Classification (Boolean/Binary)
-  const imageDataset = await prisma.dataset.create({
+  // --- Dataset B: Image Classification ---
+ const imageDataset = await prisma.dataset.create({
     data: {
-      title: 'Cat vs Dog Image Classification',
-      description:
-        'Look at the image and decide if it contains a cat or a dog.',
+      title: 'Traffic Light Detection',
+      description: 'Select the correct color of the traffic light in the image.',
       dataType: 'IMAGE',
-      question: 'Is this a Cat or a Dog?',
-      options: ['Cat', 'Dog'], // JSON array
+      question: 'What color is the traffic light?',
+      options: ['Red', 'Yellow', 'Green', 'Off'],
       reward: 100,
-      requiredVotes: 5,
-      status: 'ACTIVE',
-      ownerId: clientUser.id,
+      requiredVotes: 3,
+      ownerId: client.id,
+      tasks: {
+        create: [
+          {
+            content: 'Traffic Cam #404 - Intersection A', 
+            // REAL RED LIGHT IMAGE
+            imageUrls: ['https://images.unsplash.com/photo-1494129935429-873eafa78178?q=80&w=1203&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'], 
+            status: 'ACTIVE',
+          },
+          {
+            content: 'Traffic Cam #505 - Intersection B',
+            // REAL GREEN LIGHT IMAGE
+            imageUrls: ['https://images.unsplash.com/photo-1596263576753-4ef599306614?q=80&w=600&auto=format&fit=crop'],
+            status: 'ACTIVE',
+          },
+        ],
+      },
     },
   });
 
-  console.log(
-    `📂 Created Datasets: "${textDataset.title}", "${imageDataset.title}"`
-  );
+  console.log('📂 Datasets and Tasks created.');
 
-  // 4. CREATE TASKS
-  // Tasks for Text Dataset
-  // await prisma.task.create({
-  //   data: {
-  //     datasetId: textDataset.id,
-  //     content: { text: 'I absolutely love this product! It changed my life.' }, // JSON content
-  //     status: 'ACTIVE',
-  //     collectedVotes: 0,
-  //   },
-  // });
+  // ==========================================
+  // 4. CREATE VOTES (Simulate Work)
+  // ==========================================
 
-  // await prisma.task.create({
-  //   data: {
-  //     datasetId: textDataset.id,
-  //     content: { text: 'The delivery was late and the box was crushed.' }, // JSON content
-  //     status: 'ACTIVE',
-  //     collectedVotes: 0,
-  //   },
-  // });
-
-  // // Tasks for Image Dataset
-  // await prisma.task.create({
-  //   data: {
-  //     datasetId: imageDataset.id,
-  //     content: { imageUrl: 'https://placekitten.com/400/300' }, // JSON content
-  //     status: 'ACTIVE',
-  //     collectedVotes: 0,
-  //   },
-  // });
-
-  console.log('📝 Created sample tasks for both datasets.');
-
-  // 5. CREATE A SAMPLE VOTE (Optional)
-  // Let's pretend the evaluator voted on the first task
-  const firstTask = await prisma.task.findFirst({
+  // Retrieve the tasks we just created to get their IDs
+  const textTasks = await prisma.task.findMany({
     where: { datasetId: textDataset.id },
   });
 
-  if (firstTask) {
-    await prisma.vote.create({
-      data: {
-        userId: evaluatorUser.id,
-        taskId: firstTask.id,
-        selection: 'Positive',
-      },
-    });
+  // Worker 1 votes on the first text task
+  await prisma.vote.create({
+    data: {
+      taskId: textTasks[0].id,
+      userId: worker1.id,
+      selection: 'Positive',
+    },
+  });
+  
+  // Update task stats manually (or rely on your app logic triggers later)
+  await prisma.task.update({
+    where: { id: textTasks[0].id },
+    data: { collectedVotes: { increment: 1 } },
+  });
 
-    // Update the task counter
-    await prisma.task.update({
-      where: { id: firstTask.id },
-      data: { collectedVotes: { increment: 1 } },
-    });
-    console.log('🗳️  Created a sample vote.');
-  }
+  // Worker 2 votes on the same task
+  await prisma.vote.create({
+    data: {
+      taskId: textTasks[0].id,
+      userId: worker2.id,
+      selection: 'Positive',
+    },
+  });
 
-  console.log('✅ Seeding finished successfully!');
+  await prisma.task.update({
+    where: { id: textTasks[0].id },
+    data: { 
+        collectedVotes: { increment: 1 },
+        status: 'COMPLETED' // Assume 2 votes was enough
+    },
+  });
+
+  // Worker 1 votes on the negative review
+  await prisma.vote.create({
+    data: {
+      taskId: textTasks[1].id,
+      userId: worker1.id,
+      selection: 'Negative',
+    },
+  });
+
+  console.log('🗳️  Votes simulated.');
+  console.log('✅ Seeding completed successfully!');
 }
 
 main()

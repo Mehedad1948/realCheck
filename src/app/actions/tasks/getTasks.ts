@@ -80,7 +80,7 @@ export async function getTasksForUser(datasetId?: string) {
       return {
         id: task.id,
         content: contentString,
-        imageUrls: derivedImages, // Populated from content logic
+        imageUrls: task.imageUrls, // Populated from content logic
 
         // Flatten dataset config
         question: task.dataset.question,
