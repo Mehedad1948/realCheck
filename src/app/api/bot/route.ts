@@ -1,29 +1,25 @@
-// src/app/api/bot/route.ts
-import { Bot, webhookCallback, InlineKeyboard } from "grammy";
+import { timingSafeEqual } from 'node:crypto';
+import { webhookCallback } from 'grammy';
+import { requireEnv } from '@/server/env';
+import { getBot } from '@/server/telegram/bot';
 
-export const POST = async (req: Request) => {
-    const token = process.env.BOT_TOKEN;
-    if (!token) return new Response("BOT_TOKEN missing", { status: 500 });
+// Telegram webhook. Register it with `npm run telegram:setup`.
 
-    const bot = new Bot(token);
+let handler: ((request: Request) => Promise<Response>) | undefined;
 
-    // --- COMMANDS ---
+function hasValidSecret(request: Request, secret: string) {
+  const received = Buffer.from(request.headers.get('x-telegram-bot-api-secret-token') ?? '');
+  const expected = Buffer.from(secret);
+  return received.length === expected.length && timingSafeEqual(received, expected);
+}
 
-    bot.command("start", async (ctx) => {
-        // 1. Define the Web App URL
-        // IMPORTANT: Must be HTTPS. 'localhost' won't work with Telegram directly.
-        // Use your Vercel URL or a tunneling service (like ngrok) for local dev.
-        const webAppUrl = "https://real-check.vercel.app/app"; 
-
-        // 2. Create the keyboard button
-        const keyboard = new InlineKeyboard()
-            .webApp("🚀 Start Earning (RealCheck)", webAppUrl);
-
-        // 3. Send the message with the button
-        await ctx.reply("Welcome to RealCheck! \n\nComplete tasks to verify data and earn TON.", {
-            reply_markup: keyboard,
-        });
-    });
-
-    return webhookCallback(bot, "std/http")(req);
-};
+export async function POST(request: Request) {
+  const secret = requireEnv('TELEGRAM_WEBHOOK_SECRET');
+  // Checked here, before grammY: its own check runs only after `bot.init()`, which
+  // would make every unauthenticated request trigger a call to the Telegram API.
+  if (!hasValidSecret(request, secret)) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+  handler ??= webhookCallback(getBot(), 'std/http', { secretToken: secret });
+  return handler(request);
+}

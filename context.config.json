@@ -1,0 +1,17 @@
+{
+  "projectDescription": " RealCheck leverages distributed human intelligence to validate datasets with cryptographic precision. Ensure quality before you train your models.",
+  "outputFile": "project-context.json",
+  "exclude": [
+    "dist",
+    ".next",
+    "coverage",
+    "package-lock.json",
+    "yarn.lock"
+  ],
+  "includeContent": [
+    "**/*.schema.ts",
+    "**/*.prisma",
+    "**/*.css",
+    "**/types/*.ts"
+  ]
+}

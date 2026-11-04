@@ -1,36 +1,37 @@
-import { TelegramThemeSync } from "@/components/telegram-theme-sync";
-import { ThemeProvider } from 'next-themes';
-import "../globals.css"
+import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
+import { QueryProvider } from '@/components/providers/query-provider';
+import { Toaster } from '@/components/ui/sonner';
+import { TelegramProvider } from '@/features/tma/telegram-provider';
+import '../globals.css';
 
-export const viewport = {
+// Root layout for the Telegram Mini App (/app). Separate from the website's root
+// layout: no site chrome, Telegram's theme and viewport, React Query for the BFF.
+
+export const metadata: Metadata = {
+  title: 'RealCheck',
+  description: 'Label data and get paid, right inside Telegram.',
+};
+
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
 };
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function TmaLayout({ children }: { children: React.ReactNode }) {
   return (
-    /* 
-      suppressHydrationWarning is needed because next-themes 
-      modifies the HTML tag attributes 
-    */
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Load the script early */}
-        <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
-      </head>
-      <body className="bg-background text-foreground antialiased">
-        <ThemeProvider  attribute="class" defaultTheme="system" enableSystem>
-           
-           {/* This component handles the logic */}
-           <TelegramThemeSync /> 
-           
-           <main className="min-h-screen w-full">
-             {children}
-           </main>
-        
-        </ThemeProvider>
+      <body className="tma bg-background text-foreground antialiased">
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+        <QueryProvider>
+          <TelegramProvider>
+            <main className="tma-safe-area min-h-[var(--tg-viewport-stable-height,100dvh)] w-full">{children}</main>
+            <Toaster position="top-center" />
+          </TelegramProvider>
+        </QueryProvider>
       </body>
     </html>
   );

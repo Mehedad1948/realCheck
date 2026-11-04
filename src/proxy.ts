@@ -1,43 +1,30 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { decrypt } from "@/lib/auth";
+import { NextResponse, type NextRequest } from 'next/server';
+import { SESSION_COOKIE, verifySessionToken } from '@/server/auth/session-token';
 
-// 1. Specify protected and public routes
-const protectedRoutes = ["/dashboard"];
-const publicRoutes = ["/login", "/register", "/"];
+// Optimistic routing only: redirects based on the session cookie so signed-out users
+// don't see a flash of the dashboard. Real authorization happens in
+// `src/server/auth/dal.ts`, which every page, action and route handler calls.
+// The Mini App (/app) and the API are not matched: they authenticate per request.
 
-export default async function middleware(req: NextRequest) {
-  // 2. Check if the current route is protected or public
-  const path = req.nextUrl.pathname;
-  const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route));
-  const isPublicRoute = publicRoutes.includes(path);
+export async function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  const session = token ? await verifySessionToken(token) : null;
+  const isClient = session?.role === 'CLIENT';
 
-  // 3. Decrypt the session from the cookie
-  const cookie = req.cookies.get("session")?.value;
-  const session = cookie ? await decrypt(cookie).catch(() => null) : null;
-
-  // 4. Redirect Logic
-  
-  // Scenario: User tries to access protected route without being logged in
-  if (isProtectedRoute && !session) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl));
+  if (pathname.startsWith('/dashboard') && !isClient) {
+    const login = new URL('/login', request.url);
+    login.searchParams.set('next', pathname + search);
+    return NextResponse.redirect(login);
   }
 
-  // Scenario: User is logged in (CLIENT) but tries to go to login page -> redirect to dashboard
-  if (isPublicRoute && session?.role === 'CLIENT' && path === '/login') {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
-  }
-
-  // Scenario: Role-based access control for Dashboard
-  if (path.startsWith("/dashboard") && session?.role !== "CLIENT") {
-    // Logged in but not a CLIENT (e.g., Evaluator)
-    return NextResponse.redirect(new URL("/", req.nextUrl));
+  if ((pathname === '/login' || pathname === '/register') && isClient) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();
 }
 
-// Routes Middleware should not run on
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|.*\\.png$).*)"],
+  matcher: ['/dashboard/:path*', '/login', '/register'],
 };

@@ -1,6 +1,3 @@
-// This is your complete, corrected schema.
-// It merges the 'Client' and 'User' models using a 'role' field.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,16 +8,20 @@ datasource db {
 }
 
 // ==========================================
-// AUTH & USER MODELS (UNIFIED)
+// USERS
 // ==========================================
+// One table for both sides of the marketplace:
+//   CLIENT    -> web dashboard user (email + password) who owns datasets
+//   EVALUATOR -> Telegram Mini App user who labels tasks
+//   ADMIN     -> operator
 
-// ADDED: A Role enum to define the capabilities of a user.
 enum Role {
-  EVALUATOR // A worker who completes tasks.
-  CLIENT // A customer who creates datasets.
-  ADMIN // A superuser for your system.
+  EVALUATOR
+  CLIENT
+  ADMIN
 }
 
+// Legacy NextAuth tables. Unused by the app, kept so no data is dropped.
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -55,69 +56,85 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// THE UNIFIED USER MODEL
-// This model now represents BOTH workers and clients.
 model User {
   id            String    @id @default(cuid())
-  name          String? // For web users, can be company or personal name.
+  name          String?
   email         String?   @unique
   emailVerified DateTime?
-  image         String? // Avatar from Google or other providers.
+  image         String?
   password      String?
-  // Telegram fields remain for workers.
-  telegramId    String?   @unique
-  username      String?
-  firstName     String?
-  lastName      String?
 
-  // Worker-specific fields.
-  reputation Int   @default(100)
-  balance    Float @default(0.0)
+  // Telegram identity (evaluators)
+  telegramId   String?  @unique
+  username     String?
+  firstName    String?
+  lastName     String?
+  languageCode String?
+  photoUrl     String?
+  isPremium    Boolean  @default(false)
+  // Whether the user allowed the bot to message them (from initData).
+  allowsWriteToPm Boolean @default(false)
 
-  // ADDED: The role field determines if the user is a CLIENT or an EVALUATOR.
+  reputation   Int @default(100)
+  // Money is stored as integer cents to avoid float rounding.
+  balanceCents Int @default(0)
+
   role Role @default(EVALUATOR)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
-  // --- RELATIONSHIPS ---
-  accounts Account[]
-  sessions Session[]
-  votes    Vote[]
-
-  // A user with the CLIENT role can own many datasets.
-  datasets Dataset[]
-
-  // REMOVED: The `tasks: Task[]` relation was incorrect and has been removed.
-  // The link between a User and a Task is correctly handled by the `Vote` model.
+  accounts     Account[]
+  sessions     Session[]
+  votes        Vote[]
+  datasets     Dataset[]
+  ledgerEntries LedgerEntry[]
 }
 
 // ==========================================
-// DATASET, TASK, & VOTE MODELS
+// DATASETS, TASKS, VOTES
 // ==========================================
 
+enum DatasetStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum DataType {
+  TEXT
+  IMAGE
+}
+
+enum TaskStatus {
+  ACTIVE
+  COMPLETED
+}
+
 model Dataset {
-  id          String   @id @default(cuid())
-  title       String // e.g. "Nike - Shoe Sentiment Analysis"
-  description String? // e.g. "Select Positive if the user sounds happy."
-  status      String   @default("ACTIVE") // ACTIVE, PAUSED, COMPLETED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  status      DatasetStatus @default(PAUSED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  // Template config
-  dataType      String // TEXT or IMAGE
-  question      String // "Is this sentiment positive?"
-  options       String[] 
-  reward        Int    @default(50)
-  requiredVotes Int    @default(2)
+  dataType      DataType
+  question      String
+  options       String[]
+  // Paid to the evaluator per accepted vote, in cents.
+  rewardCents   Int      @default(50)
+  requiredVotes Int      @default(2)
 
-  // FIXED: The dataset is now linked to the unified User model.
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  tasks Task[]
+  tasks         Task[]
+  ledgerEntries LedgerEntry[]
 
   @@index([ownerId])
+  @@index([status, createdAt])
 }
 
 model Task {
@@ -125,26 +142,28 @@ model Task {
   datasetId String
   dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
 
-  // Content (Using flexible Json type)
-    content String
+  // TEXT datasets: the text to label. IMAGE datasets: the source value (usually the URL).
+  content   String
+  imageUrls String[]
 
-  // Status & Consensus
-  collectedVotes Int    @default(0)
-  status         String @default("ACTIVE")
+  collectedVotes Int        @default(0)
+  status         TaskStatus @default(ACTIVE)
 
-  // --- NEW FIELD HERE ---
-  imageUrls String[] // Array of strings, optional (nullable)
-  // ----------------------
-
-  // Validation fields (optional)
-  correctAnswer String?
+  // Golden (validation) tasks have a known answer and are used to score evaluators.
+  // They are never completed and are never shown to evaluators as special.
   isValidation  Boolean @default(false)
+  correctAnswer String?
+
+  // Filled when the task reaches its required votes.
+  consensusLabel String?
+  // Share of votes that agreed with consensusLabel, 0..1.
+  agreement      Float?
+  completedAt    DateTime?
 
   createdAt DateTime @default(now())
   votes     Vote[]
 
-  @@index([datasetId])
-  @@index([status, collectedVotes])
+  @@index([datasetId, status, collectedVotes])
 }
 
 model Vote {
@@ -152,13 +171,48 @@ model Vote {
   userId    String
   taskId    String
   selection String
+  // Only set for golden tasks.
   isCorrect Boolean?
+  // What the evaluator was paid for this vote, in cents.
+  rewardCents Int    @default(0)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
-  // A user can only vote once on any given task.
+  // Votes are immutable and one per evaluator per task.
   @@unique([userId, taskId])
+  @@index([taskId])
+}
+
+// ==========================================
+// LEDGER
+// ==========================================
+// Append-only record of every balance change. A user's balanceCents should
+// always equal the sum of their ledger amounts.
+
+enum LedgerType {
+  TOP_UP
+  TASK_CHARGE // debit from the dataset owner
+  TASK_REWARD // credit to the evaluator
+  ADJUSTMENT
+}
+
+model LedgerEntry {
+  id          String     @id @default(cuid())
+  userId      String
+  type        LedgerType
+  // Signed: positive credits the user, negative debits them.
+  amountCents Int
+  datasetId   String?
+  voteId      String?
+  note        String?
+  createdAt   DateTime   @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataset Dataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([datasetId])
 }

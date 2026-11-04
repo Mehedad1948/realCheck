@@ -1,37 +1,33 @@
-
-
+import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import ClientTaskPage from './ClientTaskPage';
-import { getDataset } from '@/app/actions/tasks/getSingleDatasetData';
-import { getTasksForUser } from '@/app/actions/tasks';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TaskRunner } from '@/features/tma/task-runner';
+import { getPublicDataset } from '@/server/queries/public';
 
+type Props = { params: Promise<{ datasetId: string }> };
 
+// The dataset's question and options are public and cached; the evaluator's batch
+// of tasks is private and fetched by the TaskRunner through the BFF.
+export default function DatasetTasksPage({ params }: Props) {
+  return (
+    <Suspense fallback={<TaskPageSkeleton />}>
+      <DatasetTasks params={params} />
+    </Suspense>
+  );
+}
 
-export default async function page({ params }: { params: Promise<Record<string, string>> }) {
-    const getParams = await params
+async function DatasetTasks({ params }: Props) {
+  const { datasetId } = await params;
+  const dataset = await getPublicDataset(datasetId);
+  if (!dataset) notFound();
+  return <TaskRunner dataset={dataset} />;
+}
 
-    const datasetId = getParams.dataSetId;
-
-    const data = await getTasksForUser(datasetId);
-
-    const { data: datasetData } = await getDataset(datasetId)
-
-    console.log('➡️➡️➡️', data);
-
-
-    if (Array.isArray(data) && datasetData) {
-        return <Suspense fallback={<div></div>}>
-            <ClientTaskPage datasetData={datasetData} tasks={data} />
-        </Suspense>
-    } else {
-        return <div className='flex flex-col gap-4'>
-            <p className='text-rose-500 text-sm'>
-                Couldn&apos;t fetch the tasks
-            </p>
-            <p className='px-4 rounded-xl border border-rose-400 bg-rose-50 text-sm'>
-                {JSON.stringify(data)}
-            </p>
-        </div>
-    }
-
+function TaskPageSkeleton() {
+  return (
+    <div className="mx-auto max-w-md space-y-4 p-4">
+      <Skeleton className="h-6 w-full" />
+      <Skeleton className="h-[60vh] w-full rounded-xl" />
+    </div>
+  );
 }

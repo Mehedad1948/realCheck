@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createDataset } from '@/app/actions/datasets';
-// Make sure this path matches where you saved the server action (dataset.ts or datasets.ts)
+import { toast } from 'sonner';
+import { dollarsToCents } from '@/lib/money';
+import { createDatasetAction } from '@/server/actions/datasets';
 
 export default function CreateDatasetPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function CreateDatasetPage() {
   const [requiredVotes, setRequiredVotes] = useState<number>(2);
 
   const [options, setOptions] = useState<string[]>(['', '']);
+  const [reward, setReward] = useState('0.05');
 
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...options];
@@ -35,27 +37,20 @@ export default function CreateDatasetPage() {
 
     const cleanOptions = options.filter(opt => opt.trim() !== '');
 
-  try {
-      // ✅ Updated Call: No clientId passed here. 
-      // The server action handles authentication securely via cookies.
-      const result = await createDataset({
-        title,
-        description,
-        dataType,
-        question,
-        options: cleanOptions,
-        requiredVotes: Number(requiredVotes)
-      });
+    const result = await createDatasetAction({
+      title,
+      description,
+      dataType,
+      question,
+      options: cleanOptions,
+      requiredVotes: Number(requiredVotes),
+      rewardCents: dollarsToCents(Number(reward)),
+    });
 
-      if (result.success) {
-        router.push(`/dashboard/datasets/${result.datasetId}/upload`);
-      } else {
-        alert("Error: " + result.error);
-      }
-    } catch (err) {
-      console.log('Submission Error:', err);
-      alert("An unexpected error occurred.");
-    } finally {
+    if (result.ok) {
+      router.push(`/dashboard/datasets/${result.data.datasetId}/upload`);
+    } else {
+      toast.error(result.error);
       setLoading(false);
     }
   };
@@ -211,6 +206,30 @@ export default function CreateDatasetPage() {
 
             <p className="text-xs text-muted-foreground mt-2">
               Recommended: <span className="font-mono bg-muted px-1 rounded">2-3</span> for validation.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="reward" className="block text-sm font-medium text-muted-foreground mb-1">
+              Reward per answer ($)
+            </label>
+            <input
+              id="reward"
+              type="number"
+              required
+              min={0.01}
+              max={100}
+              step={0.01}
+              className="w-40 p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground"
+              value={reward}
+              onChange={(e) => setReward(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Each task costs up to{' '}
+              <span className="font-mono">
+                ${(Number(reward || 0) * requiredVotes).toFixed(2)}
+              </span>{' '}
+              ({requiredVotes} answers × ${Number(reward || 0).toFixed(2)}).
             </p>
           </div>
         </div>

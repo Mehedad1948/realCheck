@@ -1,18 +1,18 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Trash2, AlertTriangle, Loader2, X } from 'lucide-react';
+import { AlertTriangle, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { deleteAllTasksFromDataset } from '@/app/actions/datasets';
-// TODO: Import your actual server action here
+import { clearTasksAction } from '@/server/actions/datasets';
 
 interface Props {
     datasetId: string;
-    hasTasks: boolean;
+    /** Clearing is only allowed while the dataset is paused. */
+    canClear: boolean;
 }
 
-export function ClearTasksButton({ datasetId, hasTasks }: Props) {
+export function ClearTasksButton({ datasetId, canClear }: Props) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [confirmInput, setConfirmInput] = useState('');
     const [isPending, startTransition] = useTransition();
@@ -23,20 +23,13 @@ export function ClearTasksButton({ datasetId, hasTasks }: Props) {
         if (confirmInput.toLowerCase() !== CONFIRM_KEY) return;
 
         startTransition(async () => {
-            try {
-                const result = await deleteAllTasksFromDataset(datasetId);
-
-                if (result.success) {
-                    toast.success("All tasks cleared successfully");
-                    setShowConfirm(false);
-                    setConfirmInput('');
-                    // Optional: Router refresh if needed
-                    // router.refresh();
-                } else {
-                    toast.error(result.error || "Failed to clear tasks");
-                }
-            } catch (error) {
-                toast.error("Something went wrong");
+            const result = await clearTasksAction({ datasetId });
+            if (result.ok) {
+                toast.success(`Cleared ${result.data.count} tasks`);
+                setShowConfirm(false);
+                setConfirmInput('');
+            } else {
+                toast.error(result.error);
             }
         });
     };
@@ -58,14 +51,14 @@ export function ClearTasksButton({ datasetId, hasTasks }: Props) {
                     <div>
                         <h4 className="font-medium text-foreground">Clear all tasks</h4>
                         <p className="text-sm text-muted-foreground mt-1">
-                            This will permanently delete all tasks, votes, and worker history.
-                            This action cannot be undone.
+                            Permanently deletes all tasks and their answers. Payments already made are kept in the ledger.
+                            {!canClear && ' Pause the dataset first.'}
                         </p>
                     </div>
 
                     <button
                         onClick={() => setShowConfirm(true)}
-                        disabled={!hasTasks || isPending}
+                        disabled={!canClear || isPending}
                         className={cn(
                             // Base Layout
                             "whitespace-nowrap rounded-md text-sm font-medium transition-colors h-9 px-4 py-2",

@@ -1,114 +1,45 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import {
-  Wallet,
-  Play,
-  CheckCircle2,
-  TrendingUp,
-  Zap,
-  ShieldCheck,
-  ArrowRight
-} from "lucide-react";
-import Link from 'next/link';
+import { Zap } from 'lucide-react';
 import { Suspense } from 'react';
-import DatasetList from './AcailableJobs';
+import { Skeleton } from '@/components/ui/skeleton';
+import { EvaluatorCard } from '@/features/tma/evaluator-card';
+import { OpenDatasetList } from '@/features/tma/open-dataset-list';
+import { getOpenDatasets } from '@/server/queries/public';
 
-export default function DashboardPage() {
-  // MOCK DATA: In the future, these will come from your backend API
-  const userStats = {
-    balance: 4.25, // TON
-    accuracy: 98,  // The "RealCheck" Score
-    tasksDone: 142,
-    rank: "Gold Validator"
-  };
-
+// Static shell (header, layout) + cached public dataset list from the server +
+// the evaluator's private data fetched on the client through the BFF.
+export default function MiniAppHome() {
   return (
-    <div className="p-4 space-y-6 pb-20 max-w-xl mx-auto">
-
-      {/* --- HEADER SECTION --- */}
-      <header className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">RealCheck</h1>
-          <p className="text-sm text-muted-foreground">Global Data Validation</p>
-        </div>
-        <Badge variant="outline" className="px-3 py-1 gap-1 border-primary/30">
-          <ShieldCheck className="w-3 h-3 text-green-500" />
-          {userStats.rank}
-        </Badge>
+    <div className="mx-auto max-w-xl space-y-6 p-4 pb-20">
+      <header>
+        <h1 className="text-2xl font-bold">RealCheck</h1>
+        <p className="text-sm text-muted-foreground">Label data. Get paid for every accepted answer.</p>
       </header>
 
-      {/* --- EARNINGS CARD (The "Hero") --- */}
-      <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white border-none shadow-lg">
-        <CardContent className="px-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-blue-100 text-sm font-medium">Current Balance</p>
-              <h2 className="text-4xl font-bold mt-1 flex items-baseline gap-2">
-                {userStats.balance} <span className="text-lg font-normal opacity-80">TON</span>
-              </h2>
-              <p className="text-blue-200 text-xs mt-1">≈ ${(userStats.balance * 5.4).toFixed(2)} USD</p>
-            </div>
-            <div className="bg-white/20 p-2 rounded-full">
-              <Wallet className="w-6 h-6 text-white" />
-            </div>
-          </div>
+      <EvaluatorCard />
 
-          <div className="mt-6 flex flex-col gap-3">
-            <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 text-white border-none backdrop-blur-sm">
-              Withdraw
-            </Button>
-            <Button variant="secondary" className="w-full bg-white text-blue-700 hover:bg-blue-50 border-none font-semibold">
-              History
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* --- QUALITY CONTROL (The "RealCheck" Core) --- */}
-      {/* This is crucial for your business model. Users must maintain high accuracy. */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="font-medium flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-primary" />
-            Accuracy Score
-          </span>
-          <span className={userStats.accuracy > 90 ? "text-green-500 font-bold" : "text-orange-500"}>
-            {userStats.accuracy}%
-          </span>
-        </div>
-        <Progress value={userStats.accuracy} className="h-2" />
-        <p className="text-xs text-muted-foreground text-right">
-          Maintain {">"}95% to unlock higher pay.
-        </p>
-      </div>
-
-      {/* --- ACTION AREA: AVAILABLE TASKS --- */}
-      <section className="space-y-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-          Available Tasks
-        </h3>
-        <Suspense fallback={
-          <div className='flex flex-col gap-3'>
-            {Array.from({ length: 3 }).map((item, index) =>
-              <div key={index} className='w-full h-28 rounded-xl border bg-gray-100 animate-pulse'></div>)
-            }
-          </div>
-        }>
-          <DatasetList />
+      <section className="space-y-3">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Zap className="h-5 w-5 fill-yellow-500 text-yellow-500" />
+          Available tasks
+        </h2>
+        <Suspense fallback={<DatasetListSkeleton />}>
+          <OpenDatasets />
         </Suspense>
-
-
       </section>
+    </div>
+  );
+}
 
-      {/* --- BOTTOM BIG CTA --- */}
-      <Button size="lg" className="w-full h-14 text-lg shadow-lg shadow-primary/20 animate-in fade-in slide-in-from-bottom-4">
-        Start Earning Now <ArrowRight className="ml-2 w-5 h-5" />
-      </Button>
+async function OpenDatasets() {
+  return <OpenDatasetList initialData={await getOpenDatasets()} />;
+}
 
+function DatasetListSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 3 }, (_, i) => (
+        <Skeleton key={i} className="h-20 w-full rounded-xl" />
+      ))}
     </div>
   );
 }

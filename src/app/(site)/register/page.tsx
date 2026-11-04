@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState } from 'react'; // If using React 19/Next 15, otherwise use standard form action
+import { useActionState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
-import { registerAction } from '../actions/auth/register';
+import { registerAction } from '@/server/actions/auth';
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -30,7 +30,7 @@ function SubmitButton() {
 export default function RegisterPage() {
     // We wrap the action to handle the return value (error message)
     // Initial state is null or an object with an error
-    const [state, action] = useActionState(registerAction, null);
+    const [state, action] = useActionState(registerAction, undefined);
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
@@ -73,6 +73,8 @@ export default function RegisterPage() {
                                 <input
                                     id="email"
                                     name="email"
+                                    autoComplete="email"
+                                    defaultValue={state?.email}
                                     type="email"
                                     placeholder="m@example.com"
                                     required
@@ -92,11 +94,11 @@ export default function RegisterPage() {
                                     name="password"
                                     type="password"
                                     required
-                                    minLength={6}
+                                    minLength={8}
                                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                                 />
                                 <p className="text-[0.8rem] text-muted-foreground">
-                                    Must be at least 6 characters.
+                                    Must be at least 8 characters.
                                 </p>
                             </div>
 

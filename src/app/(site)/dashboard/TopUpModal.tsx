@@ -5,17 +5,16 @@ import { ResponsiveModal } from "@/components/ui/ResponsiveModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DollarSign, Wallet, CreditCard, Loader2 } from "lucide-react";
+import { DollarSign, CreditCard, Loader2 } from "lucide-react";
 import { useHashParams } from "@/hooks/useHashParams";
 import { cn } from "@/lib/utils";
-import { addFundsAction } from '../actions/payments/addFundsAction';
 import { toast } from 'sonner';
-// Optional: If you use sonner or similar
-// import { toast } from "sonner"; 
+import { dollarsToCents, formatMoney } from '@/lib/money';
+import { topUpAction } from '@/server/actions/wallet';
 
 const PRESET_AMOUNTS = [5, 10, 20, 50, 100];
 
-export function TopUpModal({ balance }: { balance: number }) {
+export function TopUpModal({ balanceCents }: { balanceCents: number }) {
     const [amount, setAmount] = useState<string>("");
     const [isPending, startTransition] = useTransition();
     const { setHashParams } = useHashParams();
@@ -33,18 +32,17 @@ export function TopUpModal({ balance }: { balance: number }) {
         if (!value || value <= 0) return;
 
         startTransition(async () => {
-            const result = await addFundsAction(value);
+            const result = await topUpAction({ amountCents: dollarsToCents(value) });
 
-            if (result.success) {
+            if (result.ok) {
                 // 1. Clear Input
                 setAmount("");
                 // 2. Close Modal (by removing the hash param)
                 setHashParams({ topUp: null });
                 // 3. Show Success (Optional)
-                toast.success(`Successfully added $${value}`);
+                toast.success(`Added ${formatMoney(dollarsToCents(value))}`);
             } else {
-                // toast.error(result.message);
-                console.error(result.message);
+                toast.error(result.error);
             }
         });
     };
@@ -53,17 +51,17 @@ export function TopUpModal({ balance }: { balance: number }) {
         <ResponsiveModal
             identifier="topUp"
             title="Add Funds"
-            description="Securely add credits to your wallet to continue labeling."
+            description="Add credits to pay evaluators for your datasets."
         >
             <div className="flex flex-col gap-6 pt-4">
 
                 {/* Visual Header */}
                 <div className="flex flex-col items-center justify-center space-y-2 py-4 bg-muted/30 rounded-lg border border-border/50 border-dashed">
                     <span className='text-lg font-semibold text-primary bg-primary/10 px-2 py-1 rounded-lg'>
-                        ${balance}
+                        {formatMoney(balanceCents)}
                     </span>
                     <p className="text-sm text-muted-foreground font-medium">
-                        Current Balance will be updated instantly
+                        Current balance
                     </p>
                 </div>
 
@@ -128,7 +126,7 @@ export function TopUpModal({ balance }: { balance: number }) {
 
                 {/* Footer Note */}
                 <p className="text-xs text-center text-muted-foreground">
-                    Payments are securely processed. <br /> By clicking Pay, you agree to our Terms of Service.
+                    Demo mode: no payment is taken and funds are credited instantly.
                 </p>
             </div>
         </ResponsiveModal>

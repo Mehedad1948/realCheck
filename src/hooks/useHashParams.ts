@@ -1,89 +1,47 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 type ParamValue = string | number | boolean | null | undefined;
-type InputType = Record<string, ParamValue>;
 
-export function useHashParams() {
-  const [hashParams, setHashParamsState] = useState<Record<string, string>>({});
-  const [isMounted, setIsMounted] = useState(false);
+// Fired after programmatic changes, since replaceState doesn't emit `hashchange`.
+const CHANGE_EVENT = 'hash-params-changed';
 
-  // Helper: Parse the current hash into a simple object
-  const getHashSearchParams = useCallback((): Record<string, string> => {
-    if (typeof window === 'undefined') return {};
-    
-    const hashString = window.location.hash.slice(1); 
-    const params = new URLSearchParams(hashString);
-    
-    const result: Record<string, string> = {};
-    params.forEach((value, key) => {
-      result[key] = value;
-    });
-    
-    return result;
-  }, []);
-
-  // 1. Subscribe to changes
-  useEffect(() => {
-    setIsMounted(true);
-    
-    // Set initial state
-    setHashParamsState(getHashSearchParams());
-
-    const handleHashChange = () => {
-      setHashParamsState(getHashSearchParams());
-    };
-
-    // Listen for native browser navigation (Back/Forward buttons)
-    window.addEventListener('hashchange', handleHashChange);
-    
-    // Listen for CUSTOM events dispatched by our hook (Programmatic changes)
-    window.addEventListener('hash-params-changed', handleHashChange);
-
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-      window.removeEventListener('hash-params-changed', handleHashChange);
-    };
-  }, [getHashSearchParams]);
-
-  /**
-   * Updates the hash parameters and notifies all other hook instances.
-   */
-  const setHashParams = useCallback((newParams: InputType) => {
-    if (typeof window === 'undefined') return;
-
-    const currentParams = new URLSearchParams(window.location.hash.slice(1));
-
-    Object.entries(newParams).forEach(([key, value]) => {
-      if (value === null || value === undefined || value === '') {
-        currentParams.delete(key);
-      } else {
-        currentParams.set(key, String(value));
-      }
-    });
-
-    const newHash = currentParams.toString();
-    const newUrl = `${window.location.pathname}${window.location.search}${newHash ? `#${newHash}` : ''}`;
-
-    // 1. Update URL
-    window.history.replaceState(null, '', newUrl);
-
-    // 2. IMPORTANT: Dispatch a custom event to notify other components (like the Modal)
-    window.dispatchEvent(new Event('hash-params-changed'));
-    
-  }, []);
-
-  const clearHashParams = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    
-    window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    window.dispatchEvent(new Event('hash-params-changed')); // Notify others
-  }, []);
-
-  return { 
-    hashParams: isMounted ? hashParams : {}, 
-    setHashParams, 
-    clearHashParams 
+function subscribe(onChange: () => void) {
+  window.addEventListener('hashchange', onChange);
+  window.addEventListener(CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener('hashchange', onChange);
+    window.removeEventListener(CHANGE_EVENT, onChange);
   };
+}
+
+function writeHash(params: URLSearchParams) {
+  const hash = params.toString();
+  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${hash ? `#${hash}` : ''}`);
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/** Reads and writes `#key=value` state in the URL, shared by every component using it. */
+export function useHashParams() {
+  const hash = useSyncExternalStore(
+    subscribe,
+    () => window.location.hash.slice(1),
+    () => '',
+  );
+
+  const hashParams = useMemo(() => Object.fromEntries(new URLSearchParams(hash)), [hash]);
+
+  const setHashParams = useCallback((next: Record<string, ParamValue>) => {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    for (const [key, value] of Object.entries(next)) {
+      if (value === null || value === undefined || value === '' || value === false) params.delete(key);
+      else params.set(key, String(value));
+    }
+    writeHash(params);
+  }, []);
+
+  const clearHashParams = useCallback(() => writeHash(new URLSearchParams()), []);
+
+  return { hashParams, setHashParams, clearHashParams };
 }

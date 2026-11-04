@@ -1,0 +1,628 @@
+{
+  "project_name": "realcheck-ui",
+  "generated_at": "2025-12-20T17:52:27.268Z",
+  "description": " RealCheck leverages distributed human intelligence to validate datasets with cryptographic precision. Ensure quality before you train your models.",
+  "structure": {
+    "type": "directory",
+    "name": "realcheck-ui",
+    "children": [
+      {
+        "type": "file",
+        "name": "README.md"
+      },
+      {
+        "type": "file",
+        "name": "components.json"
+      },
+      {
+        "type": "file",
+        "name": "context.config.json"
+      },
+      {
+        "type": "file",
+        "name": "eslint.config.mjs"
+      },
+      {
+        "type": "file",
+        "name": "next.config.ts"
+      },
+      {
+        "type": "file",
+        "name": "package.json"
+      },
+      {
+        "type": "file",
+        "name": "postcss.config.mjs"
+      },
+      {
+        "type": "directory",
+        "name": "prisma",
+        "children": [
+          {
+            "type": "directory",
+            "name": "migrations",
+            "children": [
+              {
+                "type": "directory",
+                "name": "20251202172903_init_fresh_schema",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "migration.sql"
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "name": "20251202180057_add_password_field",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "migration.sql"
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "name": "20251202195950_add_image_urls_to_task",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "migration.sql"
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "migration_lock.toml"
+              }
+            ]
+          },
+          {
+            "type": "file",
+            "name": "schema.prisma"
+          },
+          {
+            "type": "file",
+            "name": "seed.ts"
+          }
+        ]
+      },
+      {
+        "type": "file",
+        "name": "project-context.json"
+      },
+      {
+        "type": "directory",
+        "name": "public",
+        "children": [
+          {
+            "type": "file",
+            "name": "file.svg"
+          },
+          {
+            "type": "file",
+            "name": "globe.svg"
+          },
+          {
+            "type": "directory",
+            "name": "images",
+            "children": [
+              {
+                "type": "file",
+                "name": "intro-image.png"
+              }
+            ]
+          },
+          {
+            "type": "file",
+            "name": "next.svg"
+          },
+          {
+            "type": "file",
+            "name": "vercel.svg"
+          },
+          {
+            "type": "file",
+            "name": "window.svg"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "src",
+        "children": [
+          {
+            "type": "directory",
+            "name": "app",
+            "children": [
+              {
+                "type": "directory",
+                "name": "(marketing)",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "layout.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "page.tsx"
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "name": "(twa)",
+                "children": [
+                  {
+                    "type": "directory",
+                    "name": "app",
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "AcailableJobs.tsx"
+                      },
+                      {
+                        "type": "file",
+                        "name": "page.tsx"
+                      },
+                      {
+                        "type": "directory",
+                        "name": "tasks",
+                        "children": [
+                          {
+                            "type": "directory",
+                            "name": "[dataSetId]",
+                            "children": [
+                              {
+                                "type": "file",
+                                "name": "ClientTaskPage.tsx"
+                              },
+                              {
+                                "type": "file",
+                                "name": "loading.tsx"
+                              },
+                              {
+                                "type": "file",
+                                "name": "page.tsx"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "file",
+                    "name": "layout.tsx"
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "name": "actions",
+                "children": [
+                  {
+                    "type": "directory",
+                    "name": "auth",
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "login.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "logout.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "register.ts"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "directory",
+                    "name": "datasets",
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "addTasksToDataset.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "addValidationTaskAction.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "createDataset.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "deleteAllTasksFromDataset.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "export.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "index.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "updateDatasetStatusAction.ts"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "directory",
+                    "name": "payments",
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "addFundsAction.ts"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "directory",
+                    "name": "tasks",
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "getDatasets.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "getSingleDatasetData.tsx"
+                      },
+                      {
+                        "type": "file",
+                        "name": "getTasks.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "index.ts"
+                      },
+                      {
+                        "type": "file",
+                        "name": "submitVote.ts"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "name": "api",
+                "children": [
+                  {
+                    "type": "directory",
+                    "name": "bot",
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "route.ts"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "name": "dashboard",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "Sidebar.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "TopUpModal.tsx"
+                  },
+                  {
+                    "type": "directory",
+                    "name": "datasets",
+                    "children": [
+                      {
+                        "type": "directory",
+                        "name": "[datasetId]",
+                        "children": [
+                          {
+                            "type": "file",
+                            "name": "ClearTasksButton.tsx"
+                          },
+                          {
+                            "type": "file",
+                            "name": "DatasetStatusBadge.tsx"
+                          },
+                          {
+                            "type": "file",
+                            "name": "EditableField.tsx"
+                          },
+                          {
+                            "type": "file",
+                            "name": "ExportResultsButton.tsx"
+                          },
+                          {
+                            "type": "file",
+                            "name": "FundingStatusCard.tsx"
+                          },
+                          {
+                            "type": "file",
+                            "name": "layout.tsx"
+                          },
+                          {
+                            "type": "file",
+                            "name": "page.tsx"
+                          },
+                          {
+                            "type": "file",
+                            "name": "updateDatasetDetails.ts"
+                          },
+                          {
+                            "type": "directory",
+                            "name": "upload",
+                            "children": [
+                              {
+                                "type": "file",
+                                "name": "page.tsx"
+                              },
+                              {
+                                "type": "file",
+                                "name": "reviews.csv"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "directory",
+                        "name": "create",
+                        "children": [
+                          {
+                            "type": "file",
+                            "name": "page.tsx"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "directory",
+                    "name": "guide",
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "page.tsx"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "file",
+                    "name": "layout.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "page.tsx"
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "favicon.ico"
+              },
+              {
+                "type": "file",
+                "name": "globals.css"
+              },
+              {
+                "type": "file",
+                "name": "layout.tsx"
+              },
+              {
+                "type": "directory",
+                "name": "login",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "page.tsx"
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "page.tsx"
+              },
+              {
+                "type": "directory",
+                "name": "register",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "page.tsx"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "components",
+            "children": [
+              {
+                "type": "file",
+                "name": "telegram-theme-sync.tsx"
+              },
+              {
+                "type": "directory",
+                "name": "tools",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "SwipeWrapper.tsx"
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "name": "ui",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "ResponsiveModal.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "ThemeToggle.tsx.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "avatar.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "badge.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "button.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "card.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "dialog.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "drawer.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "dropdown-menu.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "input.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "label.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "progress.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "separator.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "skeleton.tsx"
+                  },
+                  {
+                    "type": "file",
+                    "name": "sonner.tsx"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "constants",
+            "children": [
+              {
+                "type": "file",
+                "name": "index.ts"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "hooks",
+            "children": [
+              {
+                "type": "file",
+                "name": "useHashParams.ts"
+              },
+              {
+                "type": "file",
+                "name": "useMediaQuery.ts"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "lib",
+            "children": [
+              {
+                "type": "directory",
+                "name": "auth",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "auth.ts"
+                  },
+                  {
+                    "type": "file",
+                    "name": "getSessionUser.ts"
+                  },
+                  {
+                    "type": "file",
+                    "name": "index.ts"
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "prisma.ts"
+              },
+              {
+                "type": "directory",
+                "name": "reqeusts",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "pagination.ts"
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "name": "types",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "tasks.ts"
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "utils.ts"
+              }
+            ]
+          },
+          {
+            "type": "file",
+            "name": "middleware.ts"
+          }
+        ]
+      },
+      {
+        "type": "file",
+        "name": "tsconfig.json"
+      }
+    ]
+  },
+  "important_file_contents": {
+    "prisma\\schema.prisma": "// This is your complete, corrected schema.\n// It merges the 'Client' and 'User' models using a 'role' field.\n\ngenerator client {\n  provider = \"prisma-client-js\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\n// ==========================================\n// AUTH & USER MODELS (UNIFIED)\n// ==========================================\n\n// ADDED: A Role enum to define the capabilities of a user.\nenum Role {\n  EVALUATOR // A worker who completes tasks.\n  CLIENT // A customer who creates datasets.\n  ADMIN // A superuser for your system.\n}\n\nmodel Account {\n  id                String  @id @default(cuid())\n  userId            String\n  type              String\n  provider          String\n  providerAccountId String\n  refresh_token     String? @db.Text\n  access_token      String? @db.Text\n  expires_at        Int?\n  token_type        String?\n  scope             String?\n  id_token          String? @db.Text\n  session_state     String?\n  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@unique([provider, providerAccountId])\n}\n\nmodel Session {\n  id           String   @id @default(cuid())\n  sessionToken String   @unique\n  userId       String\n  expires      DateTime\n  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)\n}\n\nmodel VerificationToken {\n  identifier String\n  token      String   @unique\n  expires    DateTime\n\n  @@unique([identifier, token])\n}\n\n// THE UNIFIED USER MODEL\n// This model now represents BOTH workers and clients.\nmodel User {\n  id            String    @id @default(cuid())\n  name          String? // For web users, can be company or personal name.\n  email         String?   @unique\n  emailVerified DateTime?\n  image         String? // Avatar from Google or other providers.\n  password      String?\n  // Telegram fields remain for workers.\n  telegramId    String?   @unique\n  username      String?\n  firstName     String?\n  lastName      String?\n\n  // Worker-specific fields.\n  reputation Int   @default(100)\n  balance    Float @default(0.0)\n\n  // ADDED: The role field determines if the user is a CLIENT or an EVALUATOR.\n  role Role @default(EVALUATOR)\n\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  // --- RELATIONSHIPS ---\n  accounts Account[]\n  sessions Session[]\n  votes    Vote[]\n\n  // A user with the CLIENT role can own many datasets.\n  datasets Dataset[]\n\n  // REMOVED: The `tasks: Task[]` relation was incorrect and has been removed.\n  // The link between a User and a Task is correctly handled by the `Vote` model.\n}\n\n// ==========================================\n// DATASET, TASK, & VOTE MODELS\n// ==========================================\n\nmodel Dataset {\n  id          String   @id @default(cuid())\n  title       String // e.g. \"Nike - Shoe Sentiment Analysis\"\n  description String? // e.g. \"Select Positive if the user sounds happy.\"\n  status      String   @default(\"ACTIVE\") // ACTIVE, PAUSED, COMPLETED\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  // Template config\n  dataType      String // TEXT or IMAGE\n  question      String // \"Is this sentiment positive?\"\n  options       String[] \n  reward        Int    @default(50)\n  requiredVotes Int    @default(2)\n\n  // FIXED: The dataset is now linked to the unified User model.\n  ownerId String\n  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)\n\n  tasks Task[]\n\n  @@index([ownerId])\n}\n\nmodel Task {\n  id        String  @id @default(cuid())\n  datasetId String\n  dataset   Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)\n\n  // Content (Using flexible Json type)\n    content String\n\n  // Status & Consensus\n  collectedVotes Int    @default(0)\n  status         String @default(\"ACTIVE\")\n\n  // --- NEW FIELD HERE ---\n  imageUrls String[] // Array of strings, optional (nullable)\n  // ----------------------\n\n  // Validation fields (optional)\n  correctAnswer String?\n  isValidation  Boolean @default(false)\n\n  createdAt DateTime @default(now())\n  votes     Vote[]\n\n  @@index([datasetId])\n  @@index([status, collectedVotes])\n}\n\nmodel Vote {\n  id        String   @id @default(cuid())\n  userId    String\n  taskId    String\n  selection String\n  isCorrect Boolean?\n\n  user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)\n\n  createdAt DateTime @default(now())\n\n  // A user can only vote once on any given task.\n  @@unique([userId, taskId])\n}\n",
+    "src\\app\\globals.css": "@import \"tailwindcss\";\n@import \"tw-animate-css\";\n\n/* Updated variant: Now we need a variant for light mode if you want to toggle back */\n@custom-variant light (&:is(.light *));\n\n@theme inline {\n  --color-background: var(--background);\n  --color-foreground: var(--foreground);\n  --color-card: var(--card);\n  --color-card-foreground: var(--card-foreground);\n  --color-popover: var(--popover);\n  --color-popover-foreground: var(--popover-foreground);\n  --color-primary: var(--primary);\n  --color-primary-foreground: var(--primary-foreground);\n  --color-secondary: var(--secondary);\n  --color-secondary-foreground: var(--secondary-foreground);\n  --color-muted: var(--muted);\n  --color-muted-foreground: var(--muted-foreground);\n  --color-accent: var(--accent);\n  --color-accent-foreground: var(--accent-foreground);\n  --color-destructive: var(--destructive);\n  --color-destructive-foreground: var(--destructive-foreground);\n  --color-border: var(--border);\n  --color-input: var(--input);\n  --color-ring: var(--ring);\n  --radius-sm: calc(var(--radius) - 4px);\n  --radius-md: calc(var(--radius) - 2px);\n  --radius-lg: var(--radius);\n}\n\n/* --- 1. TELEGRAM DARK SIMULATION (Default) --- */\n/* Moved from .dark to :root to make it the default */\n:root {\n  --radius: 0.5rem;\n\n  --background: #1c1c1e;         /* Telegram Dark Bg */\n  --foreground: #ffffff;         /* Telegram Text */\n  \n  --card: #2c2c2e;               /* Slightly lighter for cards */\n  --card-foreground: #ffffff;\n  \n  --popover: #1c1c1e;\n  --popover-foreground: #ffffff;\n  \n  --primary: #8774e1;            /* Telegram Dark Blue/Purple */\n  --primary-foreground: #ffffff;\n  \n  --secondary: #000000;          /* Telegram Black Section */\n  --secondary-foreground: #ffffff;\n  \n  --muted: #000000;\n  --muted-foreground: #aaaaaa;   /* Telegram Hint */\n  \n  --accent: #2c2c2e;\n  --accent-foreground: #ffffff;\n  \n  --destructive: #ff453a;\n  --destructive-foreground: #ffffff;\n  \n  --border: #3d3d41;             /* Telegram Divider */\n  --input: #3d3d41;\n  --ring: #8774e1;\n}\n\n/* --- 2. TELEGRAM LIGHT SIMULATION (Manual Toggle) --- */\n/* Moved from :root to .light class */\n.light {\n  --background: #ffffff;         /* Telegram Bg */\n  --foreground: #000000;         /* Telegram Text */\n  \n  --card: #ffffff;\n  --card-foreground: #000000;\n  \n  --popover: #ffffff;\n  --popover-foreground: #000000;\n  \n  --primary: #3390ec;            /* Telegram Blue */\n  --primary-foreground: #ffffff;\n  \n  --secondary: #f4f4f5;          /* Telegram Secondary Bg */\n  --secondary-foreground: #000000;\n  \n  --muted: #f4f4f5;\n  --muted-foreground: #707579;   /* Telegram Hint */\n  \n  --accent: #f4f4f5;\n  --accent-foreground: #000000;\n  \n  --destructive: #ef4444;\n  --destructive-foreground: #ffffff;\n  \n  --border: #dfe1e5;             /* Telegram Divider */\n  --input: #dfe1e5;\n  --ring: #3390ec;\n}\n\n/* --- 3. ACTUAL TELEGRAM INJECTION OVERRIDE --- */\n/* \n   If the app is running inside Telegram, Telegram injects variables into :root.\n   This block maps those injected variables to our semantic names.\n   This has higher specificity, so it overrides the manual defaults above\n   ONLY when inside Telegram.\n*/\n:root[style*=\"--tg-theme\"] {\n  --background: var(--tg-theme-bg-color);\n  --foreground: var(--tg-theme-text-color);\n  \n  --card: var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color));\n  --card-foreground: var(--tg-theme-text-color);\n  \n  --popover: var(--tg-theme-bg-color);\n  --popover-foreground: var(--tg-theme-text-color);\n  \n  --primary: var(--tg-theme-button-color);\n  --primary-foreground: var(--tg-theme-button-text-color);\n  \n  --secondary: var(--tg-theme-secondary-bg-color);\n  --secondary-foreground: var(--tg-theme-text-color);\n  \n  --muted: var(--tg-theme-section-bg-color, var(--tg-theme-secondary-bg-color));\n  --muted-foreground: var(--tg-theme-hint-color);\n  \n  --accent: var(--tg-theme-secondary-bg-color);\n  --accent-foreground: var(--tg-theme-text-color);\n  \n  --border: var(--tg-theme-section-separator-color, var(--tg-theme-hint-color));\n  --input: var(--tg-theme-section-separator-color, var(--tg-theme-hint-color));\n  \n  --ring: var(--tg-theme-button-color);\n}\n\n@layer base {\n  * {\n    @apply border-border outline-ring/50;\n  }\n  body {\n    @apply bg-background text-foreground;\n  }\n}\n",
+    "src\\lib\\types\\tasks.ts": "export interface Task {\r\n  id: string;\r\n  type: string;\r\n  question: string;\r\n\r\n  // New Separated Content Fields\r\n  textContent: string | null; // Optional: for text tasks\r\n  imageUrls?: string[]; // Optional: array allows for carousels or single images\r\n\r\n  options: string[];\r\n  reward?: number;\r\n\r\n  status: string;\r\n  collectedVotes?: number;\r\n\r\n  // Validation / Credibility Props (Backend logic primarily)\r\n  isValidation?: boolean; // If true, this is a test\r\n  correctAnswer?: string | null; // The expected answer for validation tasks\r\n}\r\n\r\nexport interface UserState {\r\n  telegramId: number;\r\n  balance: number;\r\n  reputation_score: number; // New: Track how accurate they are (0.0 to 1.0)\r\n}\r\n"
+  }
+}

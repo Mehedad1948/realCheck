@@ -1,4 +1,9 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { botUrl } from '@/lib/telegram';
+import { getPlatformStats } from '@/server/queries/public';
+
+const telegramUrl = botUrl(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME);
 
 export default function LandingPage() {
   return (
@@ -57,19 +62,25 @@ export default function LandingPage() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <Link 
-            href="/dashboard"
+          <Link
+            href="/register"
             className="px-8 py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg hover:brightness-110 transition-all shadow-md hover:shadow-xl active:scale-95"
           >
-            Start Labeling
+            Label my data
           </Link>
-          <Link 
-            href="#features"
-            className="px-8 py-4 rounded-lg border border-border bg-card hover:bg-muted/50 font-medium text-lg transition-colors"
-          >
-            Learn More
-          </Link>
+          {telegramUrl && (
+            <a
+              href={telegramUrl}
+              className="px-8 py-4 rounded-lg border border-border bg-card hover:bg-muted/50 font-medium text-lg transition-colors"
+            >
+              Earn on Telegram
+            </a>
+          )}
         </div>
+
+        <Suspense fallback={<div className="mt-12 h-16" />}>
+          <PlatformStats />
+        </Suspense>
 
       </main>
 
@@ -96,10 +107,30 @@ export default function LandingPage() {
 
       {/* --- Simple Footer --- */}
       <footer className="py-8 text-center text-sm text-muted-foreground border-t border-border bg-background">
-        <p>© 2025 RealCheck Inc. All rights reserved.</p>
+        <p>© RealCheck. All rights reserved.</p>
       </footer>
 
     </div>
+  );
+}
+
+// Cached for hours and shared by every visitor, so the page stays effectively static.
+async function PlatformStats() {
+  const stats = await getPlatformStats();
+  const items = [
+    { label: 'Live datasets', value: stats.activeDatasets },
+    { label: 'Labels collected', value: stats.labels },
+    { label: 'Evaluators', value: stats.evaluators },
+  ];
+  return (
+    <dl className="mt-12 grid grid-cols-3 gap-8 text-center">
+      {items.map((item) => (
+        <div key={item.label}>
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">{item.label}</dt>
+          <dd className="text-2xl font-bold tabular-nums">{item.value.toLocaleString('en-US')}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

@@ -1,267 +1,297 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Papa from 'papaparse'; // CSV parser
-import { UploadCloud, FileText, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { AlertCircle, ArrowRight, FileText, UploadCloud } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import Papa from 'papaparse';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Progress } from '@/components/ui/progress';
+import { MAX_TASK_CONTENT_LENGTH, UPLOAD_CHUNK_SIZE } from '@/lib/constants';
+import type { TaskRowInput } from '@/lib/validation';
 import { cn } from '@/lib/utils';
-import { addTasksToDataset } from '@/app/actions/datasets/addTasksToDataset';
+import { uploadTasksAction } from '@/server/actions/datasets';
 
-type ParsedRow = Record<string, any>;
+type ParsedRow = Record<string, unknown>;
+type Dataset = { id: string; title: string; dataType: 'TEXT' | 'IMAGE'; options: string[] };
 
-export default function DatasetUploadPage() {
-    const params = useParams();
-    const router = useRouter();
-    const datasetId = params.datasetId as string;
+const NO_GOLD = '';
 
-    // State
-    const [file, setFile] = useState<File | null>(null);
-    const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
-    const [headers, setHeaders] = useState<string[]>([]);
-    const [selectedColumn, setSelectedColumn] = useState<string>('');
+export function UploadForm({ dataset }: { dataset: Dataset }) {
+  const router = useRouter();
 
-    // UI State
-    const [isDragOver, setIsDragOver] = useState(false);
-    const [isParsing, setIsParsing] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [contentColumn, setContentColumn] = useState('');
+  const [goldColumn, setGoldColumn] = useState(NO_GOLD);
 
-    // --- File Handling ---
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [uploaded, setUploaded] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-    const handleFileChange = (uploadedFile: File) => {
-        setFile(uploadedFile);
-        setError(null);
-        setIsParsing(true);
-        setParsedData([]);
+  const reset = () => {
+    setFile(null);
+    setRows([]);
+    setHeaders([]);
+    setError(null);
+    setUploaded(null);
+  };
 
-        if (uploadedFile.type === "application/json") {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const json = JSON.parse(e.target?.result as string);
-                    if (Array.isArray(json)) {
-                        // Flatten if necessary or just take the array
-                        // Assuming simple array of objects
-                        setParsedData(json);
-                        if (json.length > 0) {
-                            setHeaders(Object.keys(json[0]));
-                            setSelectedColumn(Object.keys(json[0])[0]); // Default to first
-                        }
-                    } else {
-                        setError("JSON must be an array of objects.");
-                    }
-                } catch (err) {
-                    setError("Invalid JSON file.");
-                } finally {
-                    setIsParsing(false);
-                }
-            };
-            reader.readAsText(uploadedFile);
-        } else {
-            // Assume CSV
-            Papa.parse(uploadedFile, {
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    if (results.data && results.data.length > 0) {
-                        setParsedData(results.data as ParsedRow[]);
-                        setHeaders(results.meta.fields || []);
-                        if (results.meta.fields && results.meta.fields.length > 0) {
-                            setSelectedColumn(results.meta.fields[0]);
-                        }
-                    } else {
-                        setError("File appears to be empty.");
-                    }
-                    setIsParsing(false);
-                },
-                error: (err) => {
-                    setError("Error parsing CSV: " + err.message);
-                    setIsParsing(false);
-                }
-            });
-        }
-    };
+  const accept = (data: ParsedRow[], fields: string[]) => {
+    if (data.length === 0) return setError('The file has no rows.');
+    setRows(data);
+    setHeaders(fields);
+    setContentColumn(fields[0] ?? '');
+    setGoldColumn(NO_GOLD);
+  };
 
-    const onDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragOver(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleFileChange(e.dataTransfer.files[0]);
-        }
-    }, []);
+  const handleFile = (uploadedFile: File) => {
+    reset();
+    setFile(uploadedFile);
+    setIsParsing(true);
 
-    // --- Submission ---
+    if (uploadedFile.name.toLowerCase().endsWith('.json') || uploadedFile.type === 'application/json') {
+      uploadedFile
+        .text()
+        .then((text) => {
+          const json: unknown = JSON.parse(text);
+          if (!Array.isArray(json) || !json.every((row) => row && typeof row === 'object')) {
+            throw new Error('JSON must be an array of objects.');
+          }
+          accept(json as ParsedRow[], Object.keys(json[0] ?? {}));
+        })
+        .catch((err: Error) => setError(err instanceof SyntaxError ? 'Invalid JSON file.' : err.message))
+        .finally(() => setIsParsing(false));
+      return;
+    }
 
-    const handleUpload = async () => {
-        if (!parsedData.length || !selectedColumn) return;
+    Papa.parse<ParsedRow>(uploadedFile, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        accept(results.data, results.meta.fields ?? []);
+        setIsParsing(false);
+      },
+      error: (err) => {
+        setError(`Could not read CSV: ${err.message}`);
+        setIsParsing(false);
+      },
+    });
+  };
 
-        setIsUploading(true);
+  const buildRows = (): { rows: TaskRowInput[]; skipped: number } => {
+    let skipped = 0;
+    const result: TaskRowInput[] = [];
+    for (const row of rows) {
+      const content = String(row[contentColumn] ?? '').trim();
+      if (!content || content.length > MAX_TASK_CONTENT_LENGTH) {
+        skipped++;
+        continue;
+      }
+      const gold = goldColumn ? String(row[goldColumn] ?? '').trim() : '';
+      result.push(gold ? { content, correctAnswer: gold } : { content });
+    }
+    return { rows: result, skipped };
+  };
 
-        // Extract only the selected column data
-        const cleanData = parsedData.map(row => ({
-            content: String(row[selectedColumn] || "") // Ensure string
-        })).filter(row => row.content.trim() !== "");
+  const handleUpload = async () => {
+    const { rows: prepared, skipped } = buildRows();
+    if (prepared.length === 0) return setError('No rows with content in the selected column.');
 
-        const result = await addTasksToDataset(datasetId, cleanData);
+    const badGold = prepared.find((row) => row.correctAnswer && !dataset.options.includes(row.correctAnswer));
+    if (badGold) {
+      return setError(`"${badGold.correctAnswer}" in the check-answer column isn't one of: ${dataset.options.join(', ')}.`);
+    }
 
-        if (result.success) {
-            router.push(`/dashboard`); // Redirect to list
-        } else {
-            setError(result.error || "Upload failed");
-            setIsUploading(false);
-        }
-    };
+    setError(null);
+    setUploaded(0);
+    // Sent in chunks so each request stays small and progress is visible.
+    for (let start = 0; start < prepared.length; start += UPLOAD_CHUNK_SIZE) {
+      const chunk = prepared.slice(start, start + UPLOAD_CHUNK_SIZE);
+      const result = await uploadTasksAction({ datasetId: dataset.id, rows: chunk });
+      if (!result.ok) {
+        setError(start > 0 ? `${result.error} (the first ${start} rows were saved)` : result.error);
+        setUploaded(null);
+        return;
+      }
+      setUploaded(start + chunk.length);
+    }
 
-    // --- Render ---
+    toast.success(`Uploaded ${prepared.length} tasks${skipped ? `, skipped ${skipped} empty or too-long rows` : ''}`);
+    router.push(`/dashboard/datasets/${dataset.id}`);
+  };
 
-    return (
-        <main className="min-h-screen bg-background p-6 text-foreground">
-            <div className="mx-auto max-w-4xl space-y-8">
+  const isUploading = uploaded !== null;
+  const goldCount = goldColumn ? rows.filter((row) => String(row[goldColumn] ?? '').trim()).length : 0;
 
-                {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold">Upload Data</h1>
-                    <p className="mt-2 text-muted-foreground">
-                        Import your tasks via CSV or JSON. Select the column that contains the main data (text or image URL).
-                    </p>
-                </div>
+  return (
+    <div className="mx-auto max-w-4xl space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">Upload data</h1>
+        <p className="mt-2 text-muted-foreground">
+          Add items to <span className="font-medium text-foreground">{dataset.title}</span> from a CSV or JSON file.
+          {dataset.dataType === 'IMAGE' ? ' The content column must contain image URLs.' : ''}{' '}
+          <a href="/samples/reviews.csv" download className="text-primary underline-offset-4 hover:underline">
+            Download a sample CSV
+          </a>
+        </p>
+      </div>
 
-                {/* 1. Dropzone */}
-                {!file && (
-                    <div
-                        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                        onDragLeave={() => setIsDragOver(false)}
-                        onDrop={onDrop}
-                        className={cn(
-                            "flex h-64 flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors",
-                            isDragOver ? "border-primary bg-primary/5" : "border-border bg-card",
-                        )}
-                    >
-                        <div className="flex flex-col items-center text-center p-8">
-                            <div className="mb-4 rounded-full bg-primary/10 p-4 text-primary">
-                                <UploadCloud className="h-8 w-8" />
-                            </div>
-                            <h3 className="text-lg font-semibold">Drag & drop your file here</h3>
-                            <p className="mt-1 text-sm text-muted-foreground">Supported formats: CSV, JSON</p>
+      {!file && (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragOver(true);
+          }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragOver(false);
+            const dropped = e.dataTransfer.files?.[0];
+            if (dropped) handleFile(dropped);
+          }}
+          className={cn(
+            'flex h-64 flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors',
+            isDragOver ? 'border-primary bg-primary/5' : 'border-border bg-card',
+          )}
+        >
+          <div className="mb-4 rounded-full bg-primary/10 p-4 text-primary">
+            <UploadCloud className="h-8 w-8" />
+          </div>
+          <h3 className="text-lg font-semibold">Drag & drop your file here</h3>
+          <p className="mt-1 text-sm text-muted-foreground">CSV or JSON (an array of objects)</p>
+          <label className="mt-6 cursor-pointer rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:brightness-110">
+            Browse files
+            <input
+              type="file"
+              className="hidden"
+              accept=".csv,.json,text/csv,application/json"
+              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+            />
+          </label>
+        </div>
+      )}
 
-                            <div className="mt-6">
-                                <label htmlFor="file-upload" className="cursor-pointer rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:brightness-110">
-                                    Browse Files
-                                </label>
-                                <input
-                                    id="file-upload"
-                                    type="file"
-                                    className="hidden"
-                                    accept=".csv,.json"
-                                    onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
+      {error && (
+        <div role="alert" className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <span>{error}</span>
+          {!isUploading && (
+            <button onClick={reset} className="ml-auto text-sm underline">
+              Choose another file
+            </button>
+          )}
+        </div>
+      )}
 
-                {/* Error State */}
-                {error && (
-                    <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-destructive flex gap-2 items-center">
-                        <AlertCircle className="h-5 w-5" />
-                        <span>{error}</span>
-                        <button onClick={() => setFile(null)} className="ml-auto text-sm underline">Try again</button>
-                    </div>
-                )}
-
-                {/* 2. Configuration & Preview Area */}
-                {file && !isParsing && parsedData.length > 0 && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-                        {/* Top Bar: File Info + Column Selector */}
-                        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                                        <FileText className="h-6 w-6" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-foreground">{file.name}</p>
-                                        <p className="text-xs text-muted-foreground">{parsedData.length} rows found</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                    <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                                        Map Content Column:
-                                    </label>
-                                    <select
-                                        value={selectedColumn}
-                                        onChange={(e) => setSelectedColumn(e.target.value)}
-                                        className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:ring-2 focus:ring-primary focus:outline-none"
-                                    >
-                                        {headers.map(h => (
-                                            <option key={h} value={h}>{h}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Preview Table */}
-                        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-                            <div className="border-b border-border bg-muted/50 px-6 py-3">
-                                <h3 className="text-sm font-semibold text-foreground">Data Preview (First 5 rows)</h3>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-muted/30 text-muted-foreground">
-                                        <tr>
-                                            {headers.slice(0, 4).map((header) => (
-                                                <th key={header} className={cn("px-6 py-3 font-medium", header === selectedColumn && "text-primary bg-primary/5")}>
-                                                    {header} {header === selectedColumn && "(Selected)"}
-                                                </th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {parsedData.slice(0, 5).map((row, i) => (
-                                            <tr key={i} className="bg-card hover:bg-muted/30">
-                                                {headers.slice(0, 4).map((header) => (
-                                                    <td key={`${i}-${header}`} className="px-6 py-3 max-w-[200px] truncate text-muted-foreground">
-                                                        {String(row[header])}
-                                                    </td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex justify-end gap-3 pt-4">
-                            <button
-                                onClick={() => setFile(null)}
-                                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-                                disabled={isUploading}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleUpload}
-                                disabled={isUploading}
-                                className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:brightness-110 disabled:opacity-50 transition-all"
-                            >
-                                {isUploading ? (
-                                    <>Uploading...</>
-                                ) : (
-                                    <>
-                                        Upload {parsedData.length} Tasks
-                                        <ArrowRight className="h-4 w-4" />
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
+      {file && !isParsing && rows.length > 0 && (
+        <div className="space-y-6">
+          <div className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                <FileText className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="font-medium">{file.name}</p>
+                <p className="text-xs text-muted-foreground">{rows.length.toLocaleString('en-US')} rows found</p>
+              </div>
             </div>
-        </main>
-    );
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-1 text-sm">
+                <span className="font-medium text-muted-foreground">Content column</span>
+                <select
+                  value={contentColumn}
+                  onChange={(e) => setContentColumn(e.target.value)}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                >
+                  {headers.map((h) => (
+                    <option key={h} value={h}>
+                      {h}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-sm">
+                <span className="font-medium text-muted-foreground">Check-answer column (optional)</span>
+                <select
+                  value={goldColumn}
+                  onChange={(e) => setGoldColumn(e.target.value)}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                >
+                  <option value={NO_GOLD}>None</option>
+                  {headers
+                    .filter((h) => h !== contentColumn)
+                    .map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                </select>
+                <span className="block text-xs text-muted-foreground">
+                  Rows with a value here become check questions with a known answer ({dataset.options.join(' / ')}), used to
+                  score evaluators. {goldColumn && `${goldCount} rows.`}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="border-b border-border bg-muted/50 px-6 py-3">
+              <h3 className="text-sm font-semibold">Preview (first 5 rows)</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/30 text-muted-foreground">
+                  <tr>
+                    {headers.slice(0, 5).map((h) => (
+                      <th key={h} className={cn('px-6 py-3 font-medium', (h === contentColumn || h === goldColumn) && 'bg-primary/5 text-primary')}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {rows.slice(0, 5).map((row, i) => (
+                    <tr key={i}>
+                      {headers.slice(0, 5).map((h) => (
+                        <td key={h} className="max-w-[200px] truncate px-6 py-3 text-muted-foreground">
+                          {String(row[h] ?? '')}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {isUploading && (
+            <div className="space-y-2">
+              <Progress value={(uploaded / rows.length) * 100} className="h-2" />
+              <p className="text-xs text-muted-foreground">Uploaded {uploaded.toLocaleString('en-US')} rows…</p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={reset}
+              disabled={isUploading}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleUpload}
+              disabled={isUploading || !contentColumn}
+              className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:brightness-110 disabled:opacity-50"
+            >
+              {isUploading ? 'Uploading…' : <>Upload {rows.length.toLocaleString('en-US')} rows <ArrowRight className="h-4 w-4" /></>}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

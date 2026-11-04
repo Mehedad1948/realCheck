@@ -1,317 +1,197 @@
+import { ChevronLeft } from 'lucide-react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
-import { cn } from '@/lib/utils'; // Import cn for conditional classes
-import { DatasetStatusBadge } from './DatasetStatusBadge';
-import { ExportResultsButton } from './ExportResultsButton';
+import type { ReactNode } from 'react';
+import { formatMoney } from '@/lib/money';
+import { botUrl, datasetStartParam } from '@/lib/telegram';
+import { cn } from '@/lib/utils';
+import { requireClientPage } from '@/server/auth/dal';
+import { getOwnerDataset } from '@/server/queries/owner';
 import { ClearTasksButton } from './ClearTasksButton';
-import { EditableField } from '@/app/dashboard/datasets/[datasetId]/EditableField';
-import { ReactNode } from 'react';
+import { DatasetStatusBadge } from './DatasetStatusBadge';
+import { EditableField } from './EditableField';
+import { ExportResultsButton } from './ExportResultsButton';
 
-// Helper to format currency
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
-};
-
-// Helper to format dates
-const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-  }).format(date);
-};
+export const metadata: Metadata = { title: 'Dataset' };
 
 export default async function DatasetDetailsPage({ params }: { params: Promise<{ datasetId: string }> }) {
+  const viewer = await requireClientPage();
   const { datasetId } = await params;
+  // Scoped to the signed-in owner: other clients' datasets are simply not found.
+  const dataset = await getOwnerDataset(viewer.id, datasetId);
+  if (!dataset) notFound();
 
-  // 1. Fetch Dataset + Owner Balance + Tasks Preview
-  // We include 'owner' to check their balance against the cost
-  const dataset = await prisma.dataset.findUnique({
-    where: { id: datasetId },
-    include: {
-      owner: {
-        select: { balance: true },
-      },
-      tasks: {
-        take: 5,
-        orderBy: { createdAt: 'asc' },
-      },
-      _count: {
-        select: { tasks: true },
-      },
-    },
-  });
-
-  if (!dataset) {
-    return notFound();
-  }
-
-  // 2. Calculate Stats & Financials
-  const totalTasks = dataset._count.tasks;
-  const hasTasks = totalTasks > 0;
-
-  const completedTasksCount = await prisma.task.count({
-    where: {
-      datasetId: dataset.id,
-      status: 'COMPLETED'
-    }
-  });
-
-  const progress = totalTasks > 0 ? Math.round((completedTasksCount / totalTasks) * 100) : 0;
-
-  // --- FINANCIAL CALCULATION ---
-  // How many tasks are left to be fully funded/completed?
-  const remainingTasks = totalTasks - completedTasksCount;
-
-  // Cost = Remaining Tasks * Votes Per Task * Reward Per Vote
-  // (Assuming dataset.reward is the price per single vote)
-  const estimatedCostToFinish = remainingTasks * dataset.requiredVotes * dataset.reward;
-
-  const userBalance = dataset.owner.balance;
-  const isInsufficient = userBalance < estimatedCostToFinish && remainingTasks > 0;
+  const { stats } = dataset;
+  const progress = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
+  const isUnderfunded = stats.remainingTasks > 0 && viewer.balanceCents < stats.estimatedCostCents;
+  const shareUrl = botUrl(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME, datasetStartParam(dataset.id));
 
   return (
-    <div className="min-h-screen bg-background p-6 text-foreground transition-colors duration-300">
+    <div className="space-y-8">
+      <Link href="/dashboard/datasets" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+        <ChevronLeft className="h-4 w-4" />
+        All datasets
+      </Link>
 
-
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <Link
-          href="/dashboard/datasets"
-          className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors w-fit"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-          Back to All Datasets
-        </Link>
-      </div>
-
-      {/* --- Header Section (Editable) --- */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-border pb-6">
-        <div className="w-full max-w-2xl">
-          {/* EDITABLE TITLE */}
-          <div className="mb-2">
-            <EditableField
-              datasetId={dataset.id}
-              field="title"
-              initialValue={dataset.title}
-              className="text-3xl font-bold"
-            />
-          </div>
-
-          {/* EDITABLE DESCRIPTION */}
+      <header className="flex flex-col items-start justify-between gap-4 border-b border-border pb-6 md:flex-row md:items-center">
+        <div className="w-full max-w-2xl space-y-2">
+          <EditableField datasetId={dataset.id} field="title" initialValue={dataset.title} className="text-3xl font-bold" />
           <div className="text-muted-foreground">
             <EditableField
               datasetId={dataset.id}
               field="description"
-              initialValue={dataset.description || "No description provided."}
-              isMultiline={true}
-              className="text-base "
+              initialValue={dataset.description ?? ''}
+              placeholder="Add instructions for evaluators"
+              isMultiline
             />
           </div>
+          <p className="text-sm">
+            <span className="text-muted-foreground">Question:</span> {dataset.question}{' '}
+            <span className="text-muted-foreground">({dataset.options.join(' / ')})</span>
+          </p>
         </div>
 
-        <div className="flex gap-3 items-center shrink-0">
-          <ExportResultsButton datasetId={datasetId} />
-
-          {hasTasks && (
-            <Link
-              href={`/dashboard/datasets/${datasetId}/upload`}
-              className="px-4 py-2 text-sm font-medium border border-border bg-background hover:bg-muted rounded-md transition-colors"
-            >
-              Add More Data
-            </Link>
-          )}
-          <DatasetStatusBadge datasetId={dataset.id} initialStatus={dataset.status} />
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
+          <ExportResultsButton datasetId={dataset.id} disabled={stats.votes === 0} />
+          <Link
+            href={`/dashboard/datasets/${dataset.id}/upload`}
+            className="rounded-md border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            Add data
+          </Link>
+          <DatasetStatusBadge key={dataset.status} datasetId={dataset.id} initialStatus={dataset.status} />
         </div>
       </header>
 
-      {/* --- Stats Grid --- */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Tasks" value={totalTasks.toString()} icon="📦" />
-
-        {/* Financial Stat Card */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <StatCard label="Tasks" value={stats.totalTasks.toLocaleString('en-US')} hint={`${stats.goldTasks} check questions`} />
         <StatCard
-          label={isInsufficient ? "Insufficient Funds" : "Est. Cost to Finish"}
-          value={formatCurrency(estimatedCostToFinish)}
-          icon={isInsufficient ? "⚠️" : "💰"}
-          className={isInsufficient ? "border-destructive/50 bg-destructive/5" : ""}
-          iconClassName={isInsufficient ? "bg-destructive/10 text-destructive" : "bg-green-500/10 text-green-600"}
-          valueClassName={isInsufficient ? "text-destructive font-extrabold" : ""}
-          labelClassName={isInsufficient ? "text-destructive" : ""}
+          label={isUnderfunded ? 'Balance too low to finish' : 'Max cost to finish'}
+          value={formatMoney(stats.estimatedCostCents)}
+          hint={`${formatMoney(dataset.rewardCents)} per answer · balance ${formatMoney(viewer.balanceCents)}`}
+          tone={isUnderfunded ? 'danger' : undefined}
         />
-
-        {/* EDITABLE CONSENSUS STAT CARD */}
         <StatCard
-          label="Required Consensus"
-          icon="🤝"
+          label="Answers per task"
           value={
-            <div className="flex items-center gap-1">
-              <EditableField
-                datasetId={dataset.id}
-                field="requiredVotes"
-                initialValue={dataset.requiredVotes}
-                type="number"
-                className="font-bold max-w-10" // Keeps the bold look
-              />
-              <span className="text-sm font-normal text-muted-foreground">votes</span>
-            </div>
+            <EditableField
+              datasetId={dataset.id}
+              field="requiredVotes"
+              initialValue={dataset.requiredVotes}
+              type="number"
+              className="max-w-16 font-bold"
+            />
           }
+          hint="Locked once labeling starts"
         />
-
-        <StatCard label="Created On" value={formatDate(dataset.createdAt)} icon="📅" />
+        <StatCard label="Answers collected" value={stats.votes.toLocaleString('en-US')} hint={`Since ${dataset.createdAt.toLocaleDateString('en-US', { dateStyle: 'medium' })}`} />
       </div>
 
-      {!hasTasks ? (
-        /* --- EMPTY STATE --- */
-        <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border rounded-xl bg-card/50 text-center">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Dataset is Empty</h3>
-          <p className="text-muted-foreground mb-6 max-w-md">
-            You have created the dataset shell, but there are no tasks for workers to solve yet. Upload your CSV or JSON file to get started.
+      {shareUrl && (
+        <div className="rounded-xl border border-border bg-card p-4 text-sm">
+          <span className="text-muted-foreground">Invite evaluators straight to this dataset: </span>
+          <code className="rounded bg-muted px-1.5 py-0.5 break-all">{shareUrl}</code>
+        </div>
+      )}
+
+      {stats.totalTasks === 0 && stats.goldTasks === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card/50 p-12 text-center">
+          <h3 className="mb-2 text-xl font-semibold">This dataset is empty</h3>
+          <p className="mb-6 max-w-md text-muted-foreground">
+            Upload a CSV or JSON file with the items you want labeled, then activate the dataset.
           </p>
           <Link
-            href={`/dashboard/datasets/${datasetId}/upload`}
-            className="px-6 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:brightness-110 shadow-md active:scale-95 transition-all"
+            href={`/dashboard/datasets/${dataset.id}/upload`}
+            className="rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground shadow-md hover:brightness-110"
           >
-            Upload Data Now →
+            Upload data →
           </Link>
         </div>
-
       ) : (
-        /* --- POPULATED STATE --- */
         <div className="space-y-8">
-
-          {/* Progress Bar */}
-          <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
-            <div className="flex justify-between items-end mb-2">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div className="mb-2 flex items-end justify-between">
               <div>
-                <h3 className="font-semibold text-lg">Labeling Progress</h3>
+                <h3 className="text-lg font-semibold">Labeling progress</h3>
                 <p className="text-sm text-muted-foreground">
-                  {completedTasksCount} of {totalTasks} tasks completed
+                  {stats.completedTasks.toLocaleString('en-US')} of {stats.totalTasks.toLocaleString('en-US')} tasks reached consensus
                 </p>
               </div>
               <span className="text-2xl font-bold text-primary">{progress}%</span>
             </div>
-            <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
-              />
+            <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
             </div>
           </div>
 
-          {/* Data Preview Table */}
-          <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm">
-            <div className="p-4 border-b border-border bg-muted/30 flex justify-between items-center">
-              <h3 className="font-semibold">Task Preview (First 5)</h3>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider font-mono">Read-Only View</span>
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="border-b border-border bg-muted/30 p-4">
+              <h3 className="font-semibold">First 5 tasks</h3>
             </div>
-
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground uppercase">
                   <tr>
-                    <th className="px-6 py-3">ID</th>
                     <th className="px-6 py-3">Content</th>
-                    <th className="px-6 py-3 text-center">Votes</th>
-                    <th className="px-6 py-3 text-center">Status</th>
+                    <th className="px-6 py-3 text-center">Answers</th>
+                    <th className="px-6 py-3 text-center">Result</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {dataset.tasks.map((task) => {
-                    const contentString = task.content as string;
-
-                    return (
-                      <tr key={task.id} className="bg-card border-b border-border hover:bg-muted/20 transition-colors">
-                        <td className="px-6 py-4 font-mono text-xs text-muted-foreground">
-                          {task.id.substring(0, 8)}...
-                        </td>
-                        <td className="px-6 py-4 font-medium max-w-md truncate">
-                          {dataset.dataType === 'IMAGE' ? (
-                            <div className="flex items-center gap-2 text-blue-500">
-                              <span>🖼️</span>
-                              {task.imageUrls && task.imageUrls.length > 0 ? (
-                                <a
-                                  href={task.imageUrls[0]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="hover:underline truncate max-w-[200px]"
-                                >
-                                  {task.imageUrls[0].substring(0, 40)}...
-                                </a>
-                              ) : (
-                                <span className="text-muted-foreground italic">No image URL</span>
-                              )}
-                            </div>
-                          ) : (
-                            <span title={contentString || ''}>
-                              {contentString || <span className="italic text-muted-foreground">Empty text</span>}
+                  {dataset.tasks.map((task) => (
+                    <tr key={task.id} className="border-b border-border last:border-0">
+                      <td className="max-w-md truncate px-6 py-4 font-medium" title={task.content}>
+                        {task.isValidation && (
+                          <span className="mr-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-600 uppercase">check</span>
+                        )}
+                        {dataset.dataType === 'IMAGE' ? (
+                          <a href={task.imageUrls[0] ?? task.content} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            {task.content}
+                          </a>
+                        ) : (
+                          task.content
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center tabular-nums">
+                        {task.collectedVotes}
+                        {!task.isValidation && ` / ${dataset.requiredVotes}`}
+                      </td>
+                      <td className="px-6 py-4 text-center text-xs">
+                        {task.status === 'COMPLETED' ? (
+                          task.consensusLabel ? (
+                            <span className="font-semibold text-green-600">
+                              {task.consensusLabel} ({Math.round((task.agreement ?? 0) * 100)}%)
                             </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                            {task.collectedVotes} / {dataset.requiredVotes}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          {task.status === 'COMPLETED' ? (
-                            <span className="text-green-600 font-bold text-xs">✔ Done</span>
                           ) : (
-                            <span className="text-muted-foreground text-xs">In Progress</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                            <span className="font-semibold text-amber-600">No consensus</span>
+                          )
+                        ) : (
+                          <span className="text-muted-foreground">In progress</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-
-            <div className="p-4 bg-muted/30 text-center border-t border-border">
-              <p className="text-xs text-muted-foreground">
-                Showing first 5 of {totalTasks} tasks.
-              </p>
-            </div>
           </div>
 
-          <div>
-            <ClearTasksButton datasetId={dataset.id} hasTasks={hasTasks} />
-          </div>
-
+          <ClearTasksButton datasetId={dataset.id} canClear={dataset.status !== 'ACTIVE'} />
         </div>
       )}
-
     </div>
   );
 }
 
-// --- UPDATED STAT CARD COMPONENT ---
-// Added className props to support the red "Insufficient" styling
-interface StatCardProps {
-  label: string | ReactNode;
-  value: string | number | ReactNode;
-  icon: string;
-  className?: string;
-  iconClassName?: string;
-  valueClassName?: string;
-  labelClassName?: string;
-}
-
-function StatCard({ label, value, icon, className, iconClassName, valueClassName, labelClassName }: StatCardProps) {
+function StatCard({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: string; tone?: 'danger' }) {
   return (
-    <div className={cn("bg-card border border-border p-4 rounded-lg shadow-sm flex items-center gap-4 transition-colors", className)}>
-      <div className={cn("w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-lg transition-colors", iconClassName)}>
-        {icon}
-      </div>
-      <div>
-        <p className={cn("text-xs text-muted-foreground uppercase font-semibold tracking-wide", labelClassName)}>{label}</p>
-        <p className={cn("text-lg font-bold text-foreground", valueClassName)}>{value}</p>
-      </div>
+    <div className={cn('rounded-lg border border-border bg-card p-4 shadow-sm', tone === 'danger' && 'border-destructive/50 bg-destructive/5')}>
+      <p className={cn('text-xs font-semibold tracking-wide text-muted-foreground uppercase', tone === 'danger' && 'text-destructive')}>
+        {label}
+      </p>
+      <div className={cn('text-lg font-bold', tone === 'danger' && 'text-destructive')}>{value}</div>
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }

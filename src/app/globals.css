@@ -1,10 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Updated variant: Now we need a variant for light mode if you want to toggle back */
-@custom-variant light (&:is(.light *));
+/* `dark:` utilities follow the .dark class (set by next-themes on the site, and
+   from Telegram's colorScheme in the Mini App). */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -29,105 +32,82 @@
   --radius-lg: var(--radius);
 }
 
-/* --- 1. TELEGRAM DARK SIMULATION (Default) --- */
-/* Moved from .dark to :root to make it the default */
+/* Light (Telegram light palette) */
 :root {
   --radius: 0.5rem;
-
-  --background: #1c1c1e;         /* Telegram Dark Bg */
-  --foreground: #ffffff;         /* Telegram Text */
-  
-  --card: #2c2c2e;               /* Slightly lighter for cards */
-  --card-foreground: #ffffff;
-  
-  --popover: #1c1c1e;
-  --popover-foreground: #ffffff;
-  
-  --primary: #8774e1;            /* Telegram Dark Blue/Purple */
-  --primary-foreground: #ffffff;
-  
-  --secondary: #000000;          /* Telegram Black Section */
-  --secondary-foreground: #ffffff;
-  
-  --muted: #000000;
-  --muted-foreground: #aaaaaa;   /* Telegram Hint */
-  
-  --accent: #2c2c2e;
-  --accent-foreground: #ffffff;
-  
-  --destructive: #ff453a;
-  --destructive-foreground: #ffffff;
-  
-  --border: #3d3d41;             /* Telegram Divider */
-  --input: #3d3d41;
-  --ring: #8774e1;
-}
-
-/* --- 2. TELEGRAM LIGHT SIMULATION (Manual Toggle) --- */
-/* Moved from :root to .light class */
-.light {
-  --background: #ffffff;         /* Telegram Bg */
-  --foreground: #000000;         /* Telegram Text */
-  
+  --background: #ffffff;
+  --foreground: #000000;
   --card: #ffffff;
   --card-foreground: #000000;
-  
   --popover: #ffffff;
   --popover-foreground: #000000;
-  
-  --primary: #3390ec;            /* Telegram Blue */
+  --primary: #3390ec;
   --primary-foreground: #ffffff;
-  
-  --secondary: #f4f4f5;          /* Telegram Secondary Bg */
+  --secondary: #f4f4f5;
   --secondary-foreground: #000000;
-  
   --muted: #f4f4f5;
-  --muted-foreground: #707579;   /* Telegram Hint */
-  
+  --muted-foreground: #707579;
   --accent: #f4f4f5;
   --accent-foreground: #000000;
-  
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  
-  --border: #dfe1e5;             /* Telegram Divider */
+  --border: #dfe1e5;
   --input: #dfe1e5;
   --ring: #3390ec;
 }
 
-/* --- 3. ACTUAL TELEGRAM INJECTION OVERRIDE --- */
-/* 
-   If the app is running inside Telegram, Telegram injects variables into :root.
-   This block maps those injected variables to our semantic names.
-   This has higher specificity, so it overrides the manual defaults above
-   ONLY when inside Telegram.
-*/
+/* Dark (Telegram dark palette) */
+.dark {
+  --background: #1c1c1e;
+  --foreground: #ffffff;
+  --card: #2c2c2e;
+  --card-foreground: #ffffff;
+  --popover: #1c1c1e;
+  --popover-foreground: #ffffff;
+  --primary: #8774e1;
+  --primary-foreground: #ffffff;
+  --secondary: #000000;
+  --secondary-foreground: #ffffff;
+  --muted: #000000;
+  --muted-foreground: #aaaaaa;
+  --accent: #2c2c2e;
+  --accent-foreground: #ffffff;
+  --destructive: #ff453a;
+  --destructive-foreground: #ffffff;
+  --border: #3d3d41;
+  --input: #3d3d41;
+  --ring: #8774e1;
+}
+
+/* Inside Telegram, telegram-web-app.js sets --tg-theme-* on <html>; use the user's
+   actual theme. The fallbacks keep the palettes above when a value is missing. */
 :root[style*="--tg-theme"] {
   --background: var(--tg-theme-bg-color);
   --foreground: var(--tg-theme-text-color);
-  
-  --card: var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color));
+  --card: var(--tg-theme-section-bg-color, var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color)));
   --card-foreground: var(--tg-theme-text-color);
-  
   --popover: var(--tg-theme-bg-color);
   --popover-foreground: var(--tg-theme-text-color);
-  
   --primary: var(--tg-theme-button-color);
   --primary-foreground: var(--tg-theme-button-text-color);
-  
   --secondary: var(--tg-theme-secondary-bg-color);
   --secondary-foreground: var(--tg-theme-text-color);
-  
-  --muted: var(--tg-theme-section-bg-color, var(--tg-theme-secondary-bg-color));
+  --muted: var(--tg-theme-secondary-bg-color);
   --muted-foreground: var(--tg-theme-hint-color);
-  
   --accent: var(--tg-theme-secondary-bg-color);
   --accent-foreground: var(--tg-theme-text-color);
-  
+  --destructive: var(--tg-theme-destructive-text-color, #ef4444);
   --border: var(--tg-theme-section-separator-color, var(--tg-theme-hint-color));
   --input: var(--tg-theme-section-separator-color, var(--tg-theme-hint-color));
-  
   --ring: var(--tg-theme-button-color);
+}
+
+/* Keep content clear of notches and Telegram's own controls in fullscreen mode. */
+.tma-safe-area {
+  padding-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px));
+  padding-bottom: calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px));
+  padding-left: var(--tg-safe-area-inset-left, 0px);
+  padding-right: var(--tg-safe-area-inset-right, 0px);
 }
 
 @layer base {
@@ -136,5 +116,9 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .tma {
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
   }
 }
