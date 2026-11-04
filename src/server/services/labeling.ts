@@ -6,7 +6,7 @@ import {
   TASK_BATCH_SIZE,
   TASK_CANDIDATE_POOL,
 } from '@/lib/constants';
-import type { EvaluatorProfile, TaskBatch, VoteResult } from '@/lib/api/types';
+import type { Earnings, EvaluatorProfile, TaskBatch, VoteResult } from '@/lib/api/types';
 import type { Evaluator } from '@/server/auth/tma';
 import { expireDataset } from '@/server/cache-invalidation';
 import { prisma } from '@/server/db';
@@ -37,6 +37,39 @@ export async function getEvaluatorProfile(evaluator: Evaluator): Promise<Evaluat
     tasksDone,
     accuracy: goldTotal > 0 ? goldCorrect / goldTotal : null,
     canLabel: user.reputation >= MIN_REPUTATION,
+  };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export async function getEvaluatorEarnings(evaluator: Evaluator): Promise<Earnings> {
+  const now = Date.now();
+  const startOfToday = new Date(now - (now % DAY_MS));
+  const weekAgo = new Date(now - 7 * DAY_MS);
+  const rewards = { userId: evaluator.id, type: 'TASK_REWARD' as const };
+
+  const [today, week, total, recent] = await Promise.all([
+    prisma.ledgerEntry.aggregate({ where: { ...rewards, createdAt: { gte: startOfToday } }, _sum: { amountCents: true } }),
+    prisma.ledgerEntry.aggregate({ where: { ...rewards, createdAt: { gte: weekAgo } }, _sum: { amountCents: true } }),
+    prisma.ledgerEntry.aggregate({ where: rewards, _sum: { amountCents: true } }),
+    prisma.ledgerEntry.findMany({
+      where: { userId: evaluator.id },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      select: { id: true, amountCents: true, createdAt: true, dataset: { select: { title: true } } },
+    }),
+  ]);
+
+  return {
+    todayCents: today._sum.amountCents ?? 0,
+    weekCents: week._sum.amountCents ?? 0,
+    totalCents: total._sum.amountCents ?? 0,
+    recent: recent.map((entry) => ({
+      id: entry.id,
+      amountCents: entry.amountCents,
+      datasetTitle: entry.dataset?.title ?? null,
+      createdAt: entry.createdAt.toISOString(),
+    })),
   };
 }
 

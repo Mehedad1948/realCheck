@@ -58,3 +58,17 @@ export type VoteResult = {
   rewardCents: number;
   balanceCents: number;
 };
+
+export type EarningsEntry = {
+  id: string;
+  amountCents: number;
+  datasetTitle: string | null;
+  createdAt: string;
+};
+
+export type Earnings = {
+  todayCents: number;
+  weekCents: number;
+  totalCents: number;
+  recent: EarningsEntry[];
+};

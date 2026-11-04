@@ -1,10 +1,12 @@
 'use client';
 
-import { AlertCircle, ArrowRight, FileText, UploadCloud } from 'lucide-react';
+import { AlertCircle, ArrowRight, ChevronLeft, FileText, UploadCloud } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Papa from 'papaparse';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/site/page-header';
 import { Progress } from '@/components/ui/progress';
 import { MAX_TASK_CONTENT_LENGTH, UPLOAD_CHUNK_SIZE } from '@/lib/constants';
 import type { TaskRowInput } from '@/lib/validation';
@@ -127,16 +129,22 @@ export function UploadForm({ dataset }: { dataset: Dataset }) {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Upload data</h1>
-        <p className="mt-2 text-muted-foreground">
-          Add items to <span className="font-medium text-foreground">{dataset.title}</span> from a CSV or JSON file.
-          {dataset.dataType === 'IMAGE' ? ' The content column must contain image URLs.' : ''}{' '}
-          <a href="/samples/reviews.csv" download className="text-primary underline-offset-4 hover:underline">
-            Download a sample CSV
-          </a>
-        </p>
-      </div>
+      <PageHeader
+        eyebrow={
+          <Link href={`/dashboard/datasets/${dataset.id}`} className="inline-flex items-center gap-1 hover:text-foreground">
+            <ChevronLeft className="h-4 w-4" /> {dataset.title}
+          </Link>
+        }
+        title="Upload data"
+        description={
+          <>
+            Import items from a CSV or JSON file.{dataset.dataType === 'IMAGE' ? ' The content column must contain image URLs.' : ''}{' '}
+            <a href="/samples/reviews.csv" download className="text-primary underline-offset-4 hover:underline">
+              Download a sample
+            </a>
+          </>
+        }
+      />
 
       {!file && (
         <div
@@ -152,12 +160,12 @@ export function UploadForm({ dataset }: { dataset: Dataset }) {
             if (dropped) handleFile(dropped);
           }}
           className={cn(
-            'flex h-64 flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors',
-            isDragOver ? 'border-primary bg-primary/5' : 'border-border bg-card',
+            'flex h-72 flex-col items-center justify-center rounded-2xl border border-dashed transition-all',
+            isDragOver ? 'scale-[1.01] border-primary bg-primary/5' : 'border-border bg-card',
           )}
         >
-          <div className="mb-4 rounded-full bg-primary/10 p-4 text-primary">
-            <UploadCloud className="h-8 w-8" />
+          <div className="mb-4 rounded-2xl border border-border bg-background p-4 text-primary shadow-sm">
+            <UploadCloud className="h-7 w-7" />
           </div>
           <h3 className="text-lg font-semibold">Drag & drop your file here</h3>
           <p className="mt-1 text-sm text-muted-foreground">CSV or JSON (an array of objects)</p>

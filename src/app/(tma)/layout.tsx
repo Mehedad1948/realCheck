@@ -23,12 +23,12 @@ export const viewport: Viewport = {
 
 export default function TmaLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="tma bg-background text-foreground antialiased">
+    <html lang="en" className="tma" suppressHydrationWarning>
+      <body className="bg-background text-foreground antialiased">
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <QueryProvider>
           <TelegramProvider>
-            <main className="tma-safe-area min-h-[var(--tg-viewport-stable-height,100dvh)] w-full">{children}</main>
+            <div className="tma-safe-area min-h-[var(--tg-viewport-stable-height,100dvh)] w-full">{children}</div>
             <Toaster position="top-center" />
           </TelegramProvider>
         </QueryProvider>

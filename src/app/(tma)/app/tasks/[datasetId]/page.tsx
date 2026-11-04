@@ -25,9 +25,9 @@ async function DatasetTasks({ params }: Props) {
 
 function TaskPageSkeleton() {
   return (
-    <div className="mx-auto max-w-md space-y-4 p-4">
-      <Skeleton className="h-6 w-full" />
-      <Skeleton className="h-[60vh] w-full rounded-xl" />
+    <div className="mx-auto max-w-lg space-y-4 px-4 pt-4">
+      <Skeleton className="h-4 w-full bg-card" />
+      <Skeleton className="h-[60vh] w-full rounded-2xl bg-card" />
     </div>
   );
 }

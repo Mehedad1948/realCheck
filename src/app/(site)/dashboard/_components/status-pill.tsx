@@ -1,15 +1,22 @@
 import { cn } from '@/lib/utils';
 
 const styles = {
-  ACTIVE: 'bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400',
-  PAUSED: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20 dark:text-yellow-400',
-  COMPLETED: 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400',
+  ACTIVE: { label: 'Live', className: 'text-success', dot: 'bg-success' },
+  PAUSED: { label: 'Paused', className: 'text-warning', dot: 'bg-warning' },
+  COMPLETED: { label: 'Completed', className: 'text-primary', dot: 'bg-primary' },
 } as const;
 
 export function StatusPill({ status }: { status: keyof typeof styles }) {
+  const style = styles[status];
   return (
-    <span className={cn('inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium', styles[status])}>
-      {status}
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2 py-0.5 text-[12px] font-medium',
+        style.className,
+      )}
+    >
+      <span className={cn('h-1.5 w-1.5 rounded-full', style.dot, status === 'ACTIVE' && 'animate-pulse')} />
+      {style.label}
     </span>
   );
 }

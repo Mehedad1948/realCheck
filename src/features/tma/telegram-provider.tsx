@@ -39,11 +39,12 @@ function setDarkClass(dark: boolean) {
 
 function applyChrome(webApp: WebApp) {
   setDarkClass(webApp.colorScheme === 'dark');
+  // Match Telegram's header and bottom bar to the grouped-sections page background.
   if (webApp.isVersionAtLeast('6.1')) {
-    webApp.setHeaderColor('bg_color');
-    webApp.setBackgroundColor('bg_color');
+    webApp.setHeaderColor('secondary_bg_color');
+    webApp.setBackgroundColor('secondary_bg_color');
   }
-  if (webApp.isVersionAtLeast('7.10')) webApp.setBottomBarColor('bg_color');
+  if (webApp.isVersionAtLeast('7.10')) webApp.setBottomBarColor('secondary_bg_color');
 }
 
 let handledStartParam = false;
@@ -135,8 +136,61 @@ export function useBackButton(onBack: () => void) {
   }, [webApp, onBack]);
 }
 
+type MainButtonOptions = {
+  text: string;
+  onClick: () => void;
+  visible?: boolean;
+  loading?: boolean;
+  disabled?: boolean;
+};
+
+/**
+ * Drives Telegram's native bottom button while mounted. Returns true when it is in
+ * use, so the page can hide its own fallback button.
+ */
+export function useMainButton({ text, onClick, visible = true, loading = false, disabled = false }: MainButtonOptions) {
+  const { webApp } = useTelegram();
+  const supported = Boolean(webApp?.isVersionAtLeast('6.1'));
+
+  useEffect(() => {
+    if (!supported || !webApp) return;
+    const button = webApp.MainButton;
+    button.onClick(onClick);
+    return () => {
+      button.offClick(onClick);
+    };
+  }, [supported, webApp, onClick]);
+
+  useEffect(() => {
+    if (!supported || !webApp) return;
+    const button = webApp.MainButton;
+    button.setParams({
+      text,
+      is_visible: visible,
+      is_active: !disabled && !loading,
+      ...(webApp.isVersionAtLeast('7.10') ? { has_shine_effect: visible && !disabled && !loading } : {}),
+    });
+    if (loading) button.showProgress(false);
+    else button.hideProgress();
+  }, [supported, webApp, text, visible, loading, disabled]);
+
+  useEffect(() => {
+    if (!supported || !webApp) return;
+    return () => {
+      webApp.MainButton.hideProgress();
+      webApp.MainButton.hide();
+    };
+  }, [supported, webApp]);
+
+  return supported && visible;
+}
+
 /** Haptic feedback that silently does nothing outside Telegram. */
 export const haptics = {
+  selection() {
+    const webApp = window.Telegram?.WebApp;
+    if (webApp?.isVersionAtLeast('6.1')) webApp.HapticFeedback.selectionChanged();
+  },
   impact(style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' = 'light') {
     const webApp = window.Telegram?.WebApp;
     if (webApp?.isVersionAtLeast('6.1')) webApp.HapticFeedback.impactOccurred(style);

@@ -1,21 +1,48 @@
-import { ChevronLeft } from 'lucide-react';
+import { Check, ChevronLeft, CircleDollarSign, Coins, Layers, MessagesSquare, Send, Upload } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { Suspense } from 'react';
+import { CopyButton } from '@/components/site/copy-button';
+import { StatCard } from '@/components/site/stat-card';
+import { ACTIVATION_FUNDING_TASKS } from '@/lib/constants';
 import { formatMoney } from '@/lib/money';
 import { botUrl, datasetStartParam } from '@/lib/telegram';
 import { cn } from '@/lib/utils';
 import { requireClientPage } from '@/server/auth/dal';
-import { getOwnerDataset } from '@/server/queries/owner';
+import { getOwnerDataset, type OwnerDataset } from '@/server/queries/owner';
+import { ContentSkeleton } from '../../_components/skeletons';
 import { ClearTasksButton } from './ClearTasksButton';
 import { DatasetStatusBadge } from './DatasetStatusBadge';
 import { EditableField } from './EditableField';
 import { ExportResultsButton } from './ExportResultsButton';
+import { GoLiveButton } from './GoLiveButton';
 
 export const metadata: Metadata = { title: 'Dataset' };
 
-export default async function DatasetDetailsPage({ params }: { params: Promise<{ datasetId: string }> }) {
+type Props = { params: Promise<{ datasetId: string }> };
+
+export default function DatasetDetailsPage({ params }: Props) {
+  return (
+    <Suspense fallback={<DetailSkeleton />}>
+      <DatasetDetails params={params} />
+    </Suspense>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="space-y-3 border-b border-border pb-6">
+        <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+        <div className="h-8 w-72 animate-pulse rounded-lg bg-muted" />
+      </div>
+      <ContentSkeleton />
+    </div>
+  );
+}
+
+async function DatasetDetails({ params }: Props) {
   const viewer = await requireClientPage();
   const { datasetId } = await params;
   // Scoped to the signed-in owner: other clients' datasets are simply not found.
@@ -29,169 +56,242 @@ export default async function DatasetDetailsPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-8">
-      <Link href="/dashboard/datasets" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-primary">
-        <ChevronLeft className="h-4 w-4" />
-        All datasets
-      </Link>
+      <div>
+        <Link href="/dashboard/datasets" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-4 w-4" />
+          Datasets
+        </Link>
 
-      <header className="flex flex-col items-start justify-between gap-4 border-b border-border pb-6 md:flex-row md:items-center">
-        <div className="w-full max-w-2xl space-y-2">
-          <EditableField datasetId={dataset.id} field="title" initialValue={dataset.title} className="text-3xl font-bold" />
-          <div className="text-muted-foreground">
-            <EditableField
-              datasetId={dataset.id}
-              field="description"
-              initialValue={dataset.description ?? ''}
-              placeholder="Add instructions for evaluators"
-              isMultiline
-            />
+        <header className="mt-3 flex flex-col gap-4 border-b border-border pb-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <EditableField datasetId={dataset.id} field="title" initialValue={dataset.title} className="text-[28px] font-semibold tracking-tight" />
+            <p className="mt-1 text-sm text-muted-foreground">
+              {dataset.dataType === 'IMAGE' ? 'Image' : 'Text'} dataset · created{' '}
+              {dataset.createdAt.toLocaleDateString('en-US', { dateStyle: 'medium' })}
+            </p>
           </div>
-          <p className="text-sm">
-            <span className="text-muted-foreground">Question:</span> {dataset.question}{' '}
-            <span className="text-muted-foreground">({dataset.options.join(' / ')})</span>
-          </p>
-        </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <DatasetStatusBadge key={dataset.status} datasetId={dataset.id} initialStatus={dataset.status} />
+            <ExportResultsButton datasetId={dataset.id} disabled={stats.votes === 0} />
+            <Link
+              href={`/dashboard/datasets/${dataset.id}/upload`}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              <Upload className="h-4 w-4" /> Add data
+            </Link>
+          </div>
+        </header>
+      </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-3">
-          <ExportResultsButton datasetId={dataset.id} disabled={stats.votes === 0} />
-          <Link
-            href={`/dashboard/datasets/${dataset.id}/upload`}
-            className="rounded-md border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
-          >
-            Add data
-          </Link>
-          <DatasetStatusBadge key={dataset.status} datasetId={dataset.id} initialStatus={dataset.status} />
-        </div>
-      </header>
+      {dataset.status === 'PAUSED' && <LaunchChecklist dataset={dataset} balanceCents={viewer.balanceCents} />}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <StatCard label="Tasks" value={stats.totalTasks.toLocaleString('en-US')} hint={`${stats.goldTasks} check questions`} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Items" value={stats.totalTasks.toLocaleString('en-US')} hint={`+ ${stats.goldTasks} check question${stats.goldTasks === 1 ? "" : "s"}`} icon={Layers} />
+        <StatCard label="Labeled" value={`${progress}%`} hint={`${stats.completedTasks.toLocaleString('en-US')} reached consensus`} icon={Check} />
+        <StatCard label="Answers collected" value={stats.votes.toLocaleString('en-US')} icon={MessagesSquare} />
         <StatCard
           label={isUnderfunded ? 'Balance too low to finish' : 'Max cost to finish'}
           value={formatMoney(stats.estimatedCostCents)}
-          hint={`${formatMoney(dataset.rewardCents)} per answer · balance ${formatMoney(viewer.balanceCents)}`}
+          hint={`Balance ${formatMoney(viewer.balanceCents)}`}
+          icon={CircleDollarSign}
           tone={isUnderfunded ? 'danger' : undefined}
         />
-        <StatCard
-          label="Answers per task"
-          value={
-            <EditableField
-              datasetId={dataset.id}
-              field="requiredVotes"
-              initialValue={dataset.requiredVotes}
-              type="number"
-              className="max-w-16 font-bold"
-            />
-          }
-          hint="Locked once labeling starts"
-        />
-        <StatCard label="Answers collected" value={stats.votes.toLocaleString('en-US')} hint={`Since ${dataset.createdAt.toLocaleDateString('en-US', { dateStyle: 'medium' })}`} />
       </div>
 
-      {shareUrl && (
-        <div className="rounded-xl border border-border bg-card p-4 text-sm">
-          <span className="text-muted-foreground">Invite evaluators straight to this dataset: </span>
-          <code className="rounded bg-muted px-1.5 py-0.5 break-all">{shareUrl}</code>
-        </div>
-      )}
-
-      {stats.totalTasks === 0 && stats.goldTasks === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card/50 p-12 text-center">
-          <h3 className="mb-2 text-xl font-semibold">This dataset is empty</h3>
-          <p className="mb-6 max-w-md text-muted-foreground">
-            Upload a CSV or JSON file with the items you want labeled, then activate the dataset.
-          </p>
-          <Link
-            href={`/dashboard/datasets/${dataset.id}/upload`}
-            className="rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground shadow-md hover:brightness-110"
-          >
-            Upload data →
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-            <div className="mb-2 flex items-end justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Labeling progress</h3>
-                <p className="text-sm text-muted-foreground">
-                  {stats.completedTasks.toLocaleString('en-US')} of {stats.totalTasks.toLocaleString('en-US')} tasks reached consensus
-                </p>
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-6">
+          {stats.totalTasks > 0 && (
+            <section className="rounded-xl border border-border bg-card p-5">
+              <div className="flex items-end justify-between">
+                <div>
+                  <h2 className="font-semibold">Labeling progress</h2>
+                  <p className="text-[13px] text-muted-foreground">
+                    {stats.completedTasks.toLocaleString('en-US')} of {stats.totalTasks.toLocaleString('en-US')} items have{' '}
+                    {dataset.requiredVotes} matching answers
+                  </p>
+                </div>
+                <span className="text-2xl font-semibold tabular-nums">{progress}%</span>
               </div>
-              <span className="text-2xl font-bold text-primary">{progress}%</span>
-            </div>
-            <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
-            </div>
-          </div>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-primary transition-all duration-500" style={{ width: `${progress}%` }} />
+              </div>
+            </section>
+          )}
 
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div className="border-b border-border bg-muted/30 p-4">
-              <h3 className="font-semibold">First 5 tasks</h3>
+          <section className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <h2 className="font-semibold">Items</h2>
+              <span className="text-[13px] text-muted-foreground">First {Math.min(5, dataset.tasks.length)} shown · export for all</span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-muted/50 text-xs text-muted-foreground uppercase">
-                  <tr>
-                    <th className="px-6 py-3">Content</th>
-                    <th className="px-6 py-3 text-center">Answers</th>
-                    <th className="px-6 py-3 text-center">Result</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dataset.tasks.map((task) => (
-                    <tr key={task.id} className="border-b border-border last:border-0">
-                      <td className="max-w-md truncate px-6 py-4 font-medium" title={task.content}>
-                        {task.isValidation && (
-                          <span className="mr-2 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-600 uppercase">check</span>
-                        )}
-                        {dataset.dataType === 'IMAGE' ? (
-                          <a href={task.imageUrls[0] ?? task.content} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            {task.content}
-                          </a>
-                        ) : (
-                          task.content
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-center tabular-nums">
-                        {task.collectedVotes}
-                        {!task.isValidation && ` / ${dataset.requiredVotes}`}
-                      </td>
-                      <td className="px-6 py-4 text-center text-xs">
-                        {task.status === 'COMPLETED' ? (
-                          task.consensusLabel ? (
-                            <span className="font-semibold text-green-600">
-                              {task.consensusLabel} ({Math.round((task.agreement ?? 0) * 100)}%)
-                            </span>
-                          ) : (
-                            <span className="font-semibold text-amber-600">No consensus</span>
-                          )
-                        ) : (
-                          <span className="text-muted-foreground">In progress</span>
-                        )}
-                      </td>
+            {dataset.tasks.length === 0 ? (
+              <div className="flex flex-col items-center px-6 py-14 text-center">
+                <Upload className="h-6 w-6 text-muted-foreground" />
+                <p className="mt-3 font-medium">No items yet</p>
+                <p className="mt-1 max-w-sm text-sm text-muted-foreground">Upload a CSV or JSON file with the items you want labeled.</p>
+                <Link
+                  href={`/dashboard/datasets/${dataset.id}/upload`}
+                  className="mt-5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:brightness-110"
+                >
+                  Upload data
+                </Link>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="text-[12px] text-muted-foreground">
+                    <tr className="border-b border-border">
+                      <th className="px-5 py-2.5 font-medium">Content</th>
+                      <th className="px-5 py-2.5 text-right font-medium">Answers</th>
+                      <th className="px-5 py-2.5 text-right font-medium">Result</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {dataset.tasks.map((task) => (
+                      <tr key={task.id}>
+                        <td className="max-w-md px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            {task.isValidation && (
+                              <span className="shrink-0 rounded bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">Check</span>
+                            )}
+                            {dataset.dataType === 'IMAGE' ? (
+                              <a href={task.imageUrls[0] ?? task.content} target="_blank" rel="noopener noreferrer" className="truncate text-primary hover:underline">
+                                {task.content}
+                              </a>
+                            ) : (
+                              <span className="truncate" title={task.content}>
+                                {task.content}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-right text-muted-foreground tabular-nums">
+                          {task.collectedVotes}
+                          {!task.isValidation && ` / ${dataset.requiredVotes}`}
+                        </td>
+                        <td className="px-5 py-3 text-right whitespace-nowrap">
+                          {task.status === 'COMPLETED' ? (
+                            task.consensusLabel ? (
+                              <span className="font-medium text-success">
+                                {task.consensusLabel} <span className="text-muted-foreground">· {Math.round((task.agreement ?? 0) * 100)}%</span>
+                              </span>
+                            ) : (
+                              <span className="font-medium text-warning">Tie</span>
+                            )
+                          ) : (
+                            <span className="text-muted-foreground">{task.isValidation ? 'Known answer' : 'In progress'}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
 
-          <ClearTasksButton datasetId={dataset.id} canClear={dataset.status !== 'ACTIVE'} />
+          {stats.totalTasks + stats.goldTasks > 0 && <ClearTasksButton datasetId={dataset.id} canClear={dataset.status !== 'ACTIVE'} />}
         </div>
-      )}
+
+        <aside className="space-y-6">
+          <section className="rounded-xl border border-border bg-card p-5">
+            <h2 className="font-semibold">Configuration</h2>
+            <dl className="mt-4 space-y-4 text-sm">
+              <div>
+                <dt className="text-[12px] font-medium text-muted-foreground">Question</dt>
+                <dd className="mt-1 font-medium">{dataset.question}</dd>
+              </div>
+              <div>
+                <dt className="text-[12px] font-medium text-muted-foreground">Answer options</dt>
+                <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                  {dataset.options.map((option) => (
+                    <span key={option} className="rounded-md border border-border bg-background px-2 py-0.5 text-[13px]">
+                      {option}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[12px] font-medium text-muted-foreground">Instructions for evaluators</dt>
+                <dd className="mt-1 text-muted-foreground">
+                  <EditableField datasetId={dataset.id} field="description" initialValue={dataset.description ?? ''} placeholder="Add instructions" isMultiline />
+                </dd>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <dt className="text-[12px] font-medium text-muted-foreground">Answers per item</dt>
+                  <dd className="mt-1 font-medium">
+                    <EditableField datasetId={dataset.id} field="requiredVotes" initialValue={dataset.requiredVotes} type="number" className="max-w-16" />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[12px] font-medium text-muted-foreground">Reward per answer</dt>
+                  <dd className="mt-1 flex items-center gap-1.5 font-medium">
+                    <Coins className="h-3.5 w-3.5 text-muted-foreground" />
+                    {formatMoney(dataset.rewardCents)}
+                  </dd>
+                </div>
+              </div>
+            </dl>
+          </section>
+
+          {shareUrl && (
+            <section className="rounded-xl border border-border bg-card p-5">
+              <div className="flex items-center gap-2">
+                <Send className="h-4 w-4 text-sky-500" />
+                <h2 className="font-semibold">Invite evaluators</h2>
+              </div>
+              <p className="mt-1 text-[13px] text-muted-foreground">This Telegram link opens this dataset directly.</p>
+              <div className="mt-3 flex items-center gap-2">
+                <code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2.5 py-1.5 text-[12px]">{shareUrl}</code>
+                <CopyButton value={shareUrl} />
+              </div>
+            </section>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
 
-function StatCard({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: string; tone?: 'danger' }) {
+function LaunchChecklist({ dataset, balanceCents }: { dataset: OwnerDataset; balanceCents: number }) {
+  const { stats } = dataset;
+  const neededCents = Math.min(stats.remainingTasks, ACTIVATION_FUNDING_TASKS) * dataset.requiredVotes * dataset.rewardCents;
+  const checks = [
+    { label: 'Items uploaded', done: stats.remainingTasks > 0, hint: stats.remainingTasks > 0 ? `${stats.remainingTasks} waiting` : 'Upload data first' },
+    { label: 'Check questions added', done: stats.goldTasks > 0, hint: stats.goldTasks > 0 ? `${stats.goldTasks} added` : 'Recommended for quality', optional: true },
+    {
+      label: 'Balance covers the next batch',
+      done: stats.remainingTasks > 0 && balanceCents >= neededCents,
+      hint: stats.remainingTasks > 0 ? `${formatMoney(neededCents)} needed` : '—',
+    },
+  ];
+  const ready = checks.every((check) => check.done || check.optional);
+
   return (
-    <div className={cn('rounded-lg border border-border bg-card p-4 shadow-sm', tone === 'danger' && 'border-destructive/50 bg-destructive/5')}>
-      <p className={cn('text-xs font-semibold tracking-wide text-muted-foreground uppercase', tone === 'danger' && 'text-destructive')}>
-        {label}
-      </p>
-      <div className={cn('text-lg font-bold', tone === 'danger' && 'text-destructive')}>{value}</div>
-      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-    </div>
+    <section className="flex flex-col gap-5 rounded-xl border border-primary/30 bg-primary/[0.04] p-5 lg:flex-row lg:items-center">
+      <div className="lg:w-56">
+        <h2 className="font-semibold">Ready to go live?</h2>
+        <p className="text-[13px] text-muted-foreground">Paused datasets are hidden from evaluators.</p>
+      </div>
+      <ul className="grid flex-1 gap-3 sm:grid-cols-3">
+        {checks.map((check) => (
+          <li key={check.label} className="flex items-start gap-2.5">
+            <span
+              className={cn(
+                'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
+                check.done ? 'border-success bg-success text-white' : 'border-border',
+              )}
+            >
+              {check.done && <Check className="h-3 w-3" strokeWidth={3} />}
+            </span>
+            <div>
+              <p className="text-sm font-medium">{check.label}</p>
+              <p className="text-[12px] text-muted-foreground">{check.hint}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <GoLiveButton datasetId={dataset.id} disabled={!ready} />
+    </section>
   );
 }

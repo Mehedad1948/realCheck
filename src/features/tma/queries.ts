@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/query-keys';
-import type { EvaluatorProfile, OpenDataset, TaskBatch, VoteResult } from '@/lib/api/types';
+import type { Earnings, EvaluatorProfile, OpenDataset, TaskBatch, VoteResult } from '@/lib/api/types';
 import { useTelegram } from './telegram-provider';
 
 export function useOpenDatasets(initialData?: OpenDataset[]) {
@@ -20,6 +20,15 @@ export function useMe() {
   return useQuery({
     queryKey: queryKeys.tma.me(),
     queryFn: ({ signal }) => api<EvaluatorProfile>('/api/tma/me', { signal }),
+    enabled: canAuthenticate,
+  });
+}
+
+export function useEarnings() {
+  const { canAuthenticate } = useTelegram();
+  return useQuery({
+    queryKey: queryKeys.tma.earnings(),
+    queryFn: ({ signal }) => api<Earnings>('/api/tma/earnings', { signal }),
     enabled: canAuthenticate,
   });
 }
@@ -46,6 +55,8 @@ export function useSubmitVote() {
       queryClient.setQueryData<EvaluatorProfile>(queryKeys.tma.me(), (me) =>
         me ? { ...me, balanceCents: result.balanceCents, tasksDone: me.tasksDone + 1 } : me,
       );
+      // Earnings history is refetched the next time the wallet is opened.
+      queryClient.invalidateQueries({ queryKey: queryKeys.tma.earnings(), refetchType: 'none' });
     },
   });
 }

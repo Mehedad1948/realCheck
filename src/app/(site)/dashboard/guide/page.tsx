@@ -1,152 +1,169 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import {
-  CheckCircle2,
-  Layers,
-  Zap,
-  Download,
-  MousePointerClick,
-  Info
-} from "lucide-react";
-import Image from 'next/image';
+import { BadgeCheck, Coins, Download, FileUp, Lightbulb, ShieldCheck, Users } from 'lucide-react';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { PageHeader } from '@/components/site/page-header';
+import { ACTIVATION_FUNDING_TASKS, UPLOAD_CHUNK_SIZE } from '@/lib/constants';
 
-export default function PlatformIntroductionPage() {
+export const metadata: Metadata = { title: 'Guide' };
+
+const toc = [
+  { id: 'workflow', label: 'How it works' },
+  { id: 'questions', label: 'Writing good questions' },
+  { id: 'files', label: 'File formats' },
+  { id: 'checks', label: 'Check questions' },
+  { id: 'pricing', label: 'Pricing' },
+  { id: 'export', label: 'Exporting results' },
+];
+
+export default function GuidePage() {
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-10">
+    <div className="space-y-8">
+      <PageHeader title="Guide" description="Everything you need to get accurate labels from RealCheck." />
 
-      {/* 1. HEADER IMAGE PLACEHOLDER */}
-      {/* This area is pre-styled for your future image. Currently a nice gradient. */}
-      <div className="w-full aspect-video  bg-gradient-to-br from-muted to-muted/50 rounded-xl border border-border/50 flex items-center justify-center overflow-hidden relative shadow-sm">
-        <Image
-          width={600}
-          height={500}
-          alt='RealCheck'
-          className='w-full h-full object-cover'
-          src={'/images/intro-image.png'}
-        />
-        {/* LATER: Replace the above content with <Image src="..." fill className="object-cover" /> */}
+      <div className="grid gap-10 lg:grid-cols-[200px_1fr]">
+        <nav className="hidden lg:block">
+          <ul className="sticky top-8 space-y-1 border-l border-border text-sm">
+            {toc.map((item) => (
+              <li key={item.id}>
+                <a href={`#${item.id}`} className="-ml-px block border-l border-transparent py-1 pl-4 text-muted-foreground hover:border-foreground hover:text-foreground">
+                  {item.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <article className="max-w-3xl space-y-14">
+          <Chapter id="workflow" title="How it works">
+            <ol className="grid gap-4 sm:grid-cols-2">
+              <Step icon={FileUp} title="1. Upload" text="Create a dataset with one question and its answer options, then upload a file of items." />
+              <Step icon={Users} title="2. Evaluators answer" text="When you go live, items are served to evaluators in Telegram in small batches." />
+              <Step icon={BadgeCheck} title="3. Consensus" text="Once an item has the required number of answers, the majority answer becomes its label." />
+              <Step icon={Download} title="4. Export" text="Download labels, agreement scores and vote counts as CSV or JSON at any time." />
+            </ol>
+          </Chapter>
+
+          <Chapter id="questions" title="Writing good questions">
+            <p>Evaluators see your question, your instructions and one item at a time. Clear questions produce consistent labels.</p>
+            <ul className="space-y-2">
+              <Tip>Ask one thing per dataset. Split “sentiment and topic” into two datasets.</Tip>
+              <Tip>Make options mutually exclusive, and add “Unsure” or “Other” if items can be ambiguous.</Tip>
+              <Tip>Use the instructions for the edge cases: what counts as neutral, what to do with sarcasm.</Tip>
+              <Tip>Keep options short. They are shown as large buttons on a phone.</Tip>
+            </ul>
+          </Chapter>
+
+          <Chapter id="files" title="File formats">
+            <p>
+              Upload <strong>CSV</strong> with a header row, or <strong>JSON</strong> as an array of objects. You choose which column holds the item. For image
+              datasets that column must contain public <code>https://</code> image URLs. Files are sent in chunks of {UPLOAD_CHUNK_SIZE} rows.
+            </p>
+            <Code>{`id,review,expected
+101,"Fast delivery and works perfectly.",Positive
+102,"Arrived broken, very disappointed.",
+103,"It's fine.",`}</Code>
+            <Code>{`[
+  { "url": "https://example.com/cam-404.jpg" },
+  { "url": "https://example.com/cam-505.jpg", "expected": "Green" }
+]`}</Code>
+            <p>
+              <a href="/samples/reviews.csv" download className="font-medium text-primary hover:underline">
+                Download a sample CSV
+              </a>
+            </p>
+          </Chapter>
+
+          <Chapter id="checks" title="Check questions">
+            <div className="flex gap-3 rounded-xl border border-border bg-card p-4">
+              <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+              <p className="text-sm">
+                Check questions are items with a known answer. They look exactly like normal items to evaluators. Correct answers raise an evaluator’s
+                reputation; wrong ones lower it, and evaluators with low reputation stop receiving work.
+              </p>
+            </div>
+            <p>
+              To add them, include a column with the expected answer (like <code>expected</code> above) and select it as the{' '}
+              <em>check-answer column</em> when uploading. Rows with a value become check questions; empty rows are normal items. Aim for roughly 5–10% of
+              items.
+            </p>
+          </Chapter>
+
+          <Chapter id="pricing" title="Pricing">
+            <div className="flex gap-3 rounded-xl border border-border bg-card p-4">
+              <Coins className="h-5 w-5 shrink-0 text-primary" />
+              <p className="text-sm">
+                <strong>Cost per item = reward per answer × answers per item.</strong> At $0.05 and 3 answers, an item costs $0.15 and 1,000 items cost
+                $150.
+              </p>
+            </div>
+            <p>
+              You are charged per answer as it arrives, never in advance. Going live requires enough balance for the next {ACTIVATION_FUNDING_TASKS} items. If
+              your balance runs out, the dataset pauses automatically and resumes when you add funds and reactivate it.
+            </p>
+          </Chapter>
+
+          <Chapter id="export" title="Exporting results">
+            <p>Use <em>Export results</em> on a dataset page. Each row is one item:</p>
+            <dl className="divide-y divide-border rounded-xl border border-border bg-card text-sm">
+              {[
+                ['consensus_label', 'The majority answer, or empty if the top answers tied.'],
+                ['agreement', 'Share of answers that matched the label, from 0 to 1.'],
+                ['votes_<option>', 'How many evaluators chose each option.'],
+                ['status', 'COMPLETED once the item has all its answers.'],
+              ].map(([term, text]) => (
+                <div key={term} className="flex gap-4 px-4 py-3">
+                  <dt className="w-36 shrink-0 font-mono text-[13px]">{term}</dt>
+                  <dd className="text-muted-foreground">{text}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-sm text-muted-foreground">Tip: filter on a minimum agreement (for example 0.67) to keep only confident labels.</p>
+          </Chapter>
+
+          <div className="flex flex-col items-start justify-between gap-4 rounded-xl border border-border bg-card p-6 sm:flex-row sm:items-center">
+            <div>
+              <p className="font-semibold">Ready to start?</p>
+              <p className="text-sm text-muted-foreground">Create a dataset and see your first labels within minutes.</p>
+            </div>
+            <Link href="/dashboard/datasets/create" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:brightness-110">
+              New dataset
+            </Link>
+          </div>
+        </article>
       </div>
-
-      {/* 2. MISSION STATEMENT (High Level) */}
-      <section className="space-y-4 max-w-3xl">
-        <h2 className="text-3xl font-bold tracking-tight">Purpose & Philosophy</h2>
-        <p className="text-lg text-muted-foreground leading-relaxed">
-          We bridge the gap between raw, chaotic data and high-quality machine learning models.
-          By distributing verification tasks to a global workforce, we ensure that every data point
-          in your set is vetted by human intelligence before it ever touches your training pipeline.
-        </p>
-      </section>
-
-      <Separator />
-
-      {/* 3. CORE VALUES (Grid Layout) */}
-      <section>
-        <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <Zap className="h-5 w-5 text-primary" />
-          What We Deliver
-        </h3>
-        <div className="grid md:grid-cols-3 gap-6">
-          <ValueCard
-            title="Consensus Accuracy"
-            description="We don't trust a single vote. We use a multi-voter consensus mechanism to ensure statistical accuracy for every task."
-          />
-          <ValueCard
-            title="Parallel Speed"
-            description="Your dataset is split into micro-tasks and processed simultaneously by hundreds of workers, reducing weeks of work to hours."
-          />
-          <ValueCard
-            title="Transparent Pricing"
-            description="No subscriptions. Your balance is consumed only when a task is successfully completed and verified."
-          />
-        </div>
-      </section>
-
-      {/* 4. HOW IT WORKS (The "Native App" Feel) */}
-      <section className="bg-muted/30 rounded-2xl p-8 border border-border/50">
-        <h3 className="text-xl font-semibold mb-8">Operational Workflow</h3>
-
-        <div className="space-y-8 relative">
-          {/* Vertical Line for timeline effect */}
-          <div className="absolute left-6 top-2 bottom-2 w-0.5 bg-border hidden md:block"></div>
-
-          <StepItem
-            icon={<Layers className="h-5 w-5 text-primary" />}
-            title="1. Dataset Ingestion"
-            content="Upload your images or text. Define the 'Question' you want answered (e.g., 'Is this a cat?'). We automatically chunk this into micro-tasks."
-          />
-
-          <StepItem
-            icon={<MousePointerClick className="h-5 w-5 text-primary" />}
-            title="2. Distributed Voting"
-            content="Workers access the tasks via their specialized view. They vote independently. You can monitor the 'Active' and 'Completed' counts in real-time on your dashboard."
-          />
-
-          <StepItem
-            icon={<CheckCircle2 className="h-5 w-5 text-primary" />}
-            title="3. Validation & Lock"
-            content="Once a task reaches your 'Required Votes' threshold, it locks. The majority vote is calculated and stamped as the final truth."
-          />
-
-          <StepItem
-            icon={<Download className="h-5 w-5 text-primary" />}
-            title="4. Export"
-            content="Download your results as a flat CSV (for analysis) or structured JSON (for direct model ingestion)."
-          />
-        </div>
-      </section>
-
-      {/* 5. PRO TIP / EMPHASIS BOX */}
-      {/* This uses the 'Light Primary Background' style you asked for */}
-      <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 flex gap-4 items-start">
-        <Info className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-        <div className="space-y-1">
-          <h4 className="font-semibold text-foreground">Ready to start?</h4>
-          <p className="text-sm text-muted-foreground">
-            Head over to the <strong>New Dataset</strong> tab in the sidebar. Make sure your wallet is funded via the top-up widget to activate your tasks immediately.
-          </p>
-        </div>
-      </div>
-
     </div>
   );
 }
 
-// --- SUB COMPONENTS ---
-
-function ValueCard({ title, description }: { title: string, description: string }) {
+function Chapter({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <Card className="bg-card shadow-sm hover:shadow-md transition-shadow">
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CardDescription className="text-base">
-          {description}
-        </CardDescription>
-      </CardContent>
-    </Card>
+    <section id={id} className="scroll-mt-8 space-y-4 leading-relaxed text-muted-foreground [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[13px] [&_code]:text-foreground [&_strong]:text-foreground">
+      <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
+      {children}
+    </section>
   );
 }
 
-function StepItem({ icon, title, content }: { icon: React.ReactNode, title: string, content: string }) {
+function Step({ icon: Icon, title, text }: { icon: typeof FileUp; title: string; text: string }) {
   return (
-    <div className="relative flex gap-6 md:pl-8">
-      {/* Icon Bubble */}
-      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-background border shadow-sm flex items-center justify-center z-10">
-        {icon}
-      </div>
-      <div className="pt-2 space-y-2">
-        <h4 className="font-semibold text-lg">{title}</h4>
-        <p className="text-muted-foreground max-w-2xl">
-          {content}
-        </p>
-      </div>
-    </div>
+    <li className="rounded-xl border border-border bg-card p-5">
+      <Icon className="h-5 w-5 text-primary" />
+      <p className="mt-3 font-medium text-foreground">{title}</p>
+      <p className="mt-1 text-sm">{text}</p>
+    </li>
   );
+}
+
+function Tip({ children }: { children: ReactNode }) {
+  return (
+    <li className="flex gap-2.5">
+      <Lightbulb className="mt-1 h-4 w-4 shrink-0 text-warning" />
+      <span>{children}</span>
+    </li>
+  );
+}
+
+function Code({ children }: { children: string }) {
+  return <pre className="overflow-x-auto rounded-xl border border-border bg-card p-4 font-mono text-[13px] leading-relaxed text-foreground">{children}</pre>;
 }

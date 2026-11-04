@@ -1,8 +1,9 @@
 'use client';
 
-import { BookOpen, Database, LayoutDashboard, LogOut, PlusCircle, Wallet } from 'lucide-react';
+import { BookOpen, CreditCard, Database, LayoutDashboard, LogOut, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Logo } from '@/components/site/logo';
 import { useHashParams } from '@/hooks/useHashParams';
 import { formatMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
@@ -10,7 +11,8 @@ import { logoutAction } from '@/server/actions/auth';
 
 const navItems = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'My Datasets', href: '/dashboard/datasets', icon: Database },
+  { name: 'Datasets', href: '/dashboard/datasets', icon: Database },
+  { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
   { name: 'Guide', href: '/dashboard/guide', icon: BookOpen },
 ];
 
@@ -18,7 +20,8 @@ type Props = { email: string | null; balanceCents: number; topUpEnabled: boolean
 
 function useIsActive() {
   const pathname = usePathname();
-  return (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+  return (href: string) =>
+    href === '/dashboard' ? pathname === href : pathname.startsWith(href) && !pathname.startsWith('/dashboard/datasets/create');
 }
 
 export default function Sidebar({ email, balanceCents, topUpEnabled }: Props) {
@@ -27,81 +30,80 @@ export default function Sidebar({ email, balanceCents, topUpEnabled }: Props) {
   const initials = email ? email.slice(0, 2).toUpperCase() : '??';
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r border-border bg-card text-card-foreground sm:flex">
-      <div className="flex h-16 items-center border-b border-border px-6">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-primary text-primary-foreground">R</div>
-          <span className="tracking-tight">RealCheck</span>
+    <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r border-border bg-card/50 sm:flex">
+      <div className="flex h-16 items-center px-5">
+        <Logo href="/dashboard" />
+      </div>
+
+      <div className="px-3 pt-2">
+        <Link
+          href="/dashboard/datasets/create"
+          className="flex h-9 items-center justify-center gap-2 rounded-lg bg-primary text-sm font-medium text-primary-foreground shadow-sm transition hover:brightness-110"
+        >
+          <Plus className="h-4 w-4" /> New dataset
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-6">
-        <ul className="space-y-1">
-          {navItems.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  isActive(item.href)
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-              </Link>
-            </li>
-          ))}
+      <nav className="flex-1 overflow-y-auto px-3 py-5">
+        <ul className="space-y-0.5">
+          {navItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                    active ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+                  )}
+                >
+                  <item.icon className={cn('h-4 w-4', active && 'text-primary')} />
+                  {item.name}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
-
-        <Link
-          href="/dashboard/datasets/create"
-          className="group mx-1 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/20 px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-        >
-          <PlusCircle className="h-4 w-4 transition-transform group-hover:scale-110" />
-          New Dataset
-        </Link>
       </nav>
 
-      <div className="px-4 pb-4">
-        <div className="rounded-lg border border-border bg-muted/40 p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Wallet className="h-3 w-3" />
-              Balance
-            </span>
+      <div className="px-3 pb-3">
+        <div className="rounded-xl border border-border bg-background p-4">
+          <p className="text-[12px] font-medium text-muted-foreground">Balance</p>
+          <p className="mt-0.5 text-xl font-semibold tracking-tight tabular-nums">{formatMoney(balanceCents)}</p>
+          <div className="mt-3 flex gap-2">
             {topUpEnabled && (
               <button
                 onClick={() => setHashParams({ topUp: true })}
-                className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary transition-colors hover:bg-primary/20"
+                className="flex-1 rounded-md bg-primary/10 py-1.5 text-[13px] font-medium text-primary transition-colors hover:bg-primary/15"
               >
-                Top Up
+                Add funds
               </button>
             )}
+            <Link href="/dashboard/billing" className="flex-1 rounded-md border border-border py-1.5 text-center text-[13px] font-medium transition-colors hover:bg-accent">
+              History
+            </Link>
           </div>
-          <p className="text-lg font-bold tracking-tight tabular-nums">{formatMoney(balanceCents)}</p>
         </div>
       </div>
 
-      <div className="border-t border-border p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary select-none">
-            {initials}
-          </div>
-          <p className="min-w-0 flex-1 truncate text-sm font-medium" title={email ?? undefined}>
-            {email}
-          </p>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-              title="Log out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </form>
+      <div className="flex items-center gap-3 border-t border-border px-4 py-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-[12px] font-semibold text-white select-none">
+          {initials}
         </div>
+        <p className="min-w-0 flex-1 truncate text-sm" title={email ?? undefined}>
+          {email}
+        </p>
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </form>
       </div>
     </aside>
   );
@@ -110,21 +112,21 @@ export default function Sidebar({ email, balanceCents, topUpEnabled }: Props) {
 export function MobileNav({ balanceCents }: { balanceCents: number }) {
   const isActive = useIsActive();
   return (
-    <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur sm:hidden">
+    <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-xl sm:hidden">
       <div className="flex h-14 items-center justify-between px-4">
-        <Link href="/" className="text-lg font-bold">
-          RealCheck
+        <Logo href="/dashboard" />
+        <Link href="/dashboard/billing" className="rounded-full border border-border px-3 py-1 text-sm font-medium tabular-nums">
+          {formatMoney(balanceCents)}
         </Link>
-        <span className="text-sm font-semibold tabular-nums">{formatMoney(balanceCents)}</span>
       </div>
-      <nav className="flex gap-1 overflow-x-auto px-2 pb-2">
+      <nav className="flex gap-1 overflow-x-auto px-3 pb-2">
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              'rounded-md px-3 py-1.5 text-sm whitespace-nowrap',
-              isActive(item.href) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+              'rounded-full px-3 py-1.5 text-sm whitespace-nowrap',
+              isActive(item.href) ? 'bg-foreground text-background' : 'text-muted-foreground',
             )}
           >
             {item.name}

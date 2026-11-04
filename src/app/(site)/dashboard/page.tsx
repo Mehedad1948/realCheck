@@ -1,62 +1,105 @@
 import { CheckCircle2, Database, Upload, Wallet } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { PageHeader } from '@/components/site/page-header';
+import { StatCard } from '@/components/site/stat-card';
 import { formatMoney } from '@/lib/money';
 import { requireClientPage } from '@/server/auth/dal';
 import { getOwnerDatasets } from '@/server/queries/owner';
 import { DatasetGrid, NewDatasetLink } from './_components/dataset-grid';
+import { GettingStarted, type Step } from './_components/getting-started';
+import { ContentSkeleton } from './_components/skeletons';
 
-export const metadata: Metadata = { title: 'Dashboard' };
+export const metadata: Metadata = { title: 'Overview' };
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <div className="space-y-8">
+      <PageHeader title="Overview" description="Your datasets and labeling progress at a glance." actions={<NewDatasetLink />} />
+      <Suspense fallback={<ContentSkeleton />}>
+        <Overview />
+      </Suspense>
+    </div>
+  );
+}
+
+async function Overview() {
   const viewer = await requireClientPage();
   const datasets = await getOwnerDatasets(viewer.id);
 
   const totalTasks = datasets.reduce((sum, d) => sum + d.totalTasks, 0);
   const completedTasks = datasets.reduce((sum, d) => sum + d.completedTasks, 0);
+  const live = datasets.filter((d) => d.status === 'ACTIVE').length;
+  const oldest = datasets.at(-1);
+  const datasetHref = (suffix = '') => (oldest ? `/dashboard/datasets/${oldest.id}${suffix}` : '/dashboard/datasets/create');
 
-  const stats = [
-    { label: 'Datasets', value: datasets.length.toLocaleString('en-US'), icon: Database, tone: 'bg-primary/10 text-primary' },
-    { label: 'Tasks uploaded', value: totalTasks.toLocaleString('en-US'), icon: Upload, tone: 'bg-green-500/10 text-green-600' },
-    { label: 'Tasks labeled', value: completedTasks.toLocaleString('en-US'), icon: CheckCircle2, tone: 'bg-blue-500/10 text-blue-600' },
-    { label: 'Balance', value: formatMoney(viewer.balanceCents), icon: Wallet, tone: 'bg-amber-500/10 text-amber-600' },
+  const steps: Step[] = [
+    {
+      title: 'Create a dataset',
+      description: 'Choose the question evaluators will answer.',
+      done: datasets.length > 0,
+      href: '/dashboard/datasets/create',
+      cta: 'Create',
+    },
+    {
+      title: 'Upload your data',
+      description: 'Import a CSV or JSON file of texts or image URLs.',
+      done: totalTasks > 0,
+      href: datasetHref('/upload'),
+      cta: 'Upload',
+    },
+    {
+      title: 'Fund your balance',
+      description: 'You pay per answer received.',
+      done: viewer.balanceCents > 0,
+      href: '/dashboard/billing',
+      cta: 'Add funds',
+    },
+    {
+      title: 'Go live',
+      description: 'Activate a dataset to send it to evaluators.',
+      done: datasets.some((d) => d.status !== 'PAUSED'),
+      href: datasetHref(),
+      cta: 'Activate',
+    },
   ];
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="mt-1 text-muted-foreground">Manage your datasets and track labeling progress.</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href="/dashboard/guide"
-            className="inline-flex items-center rounded-lg border border-input px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent"
-          >
-            Guide
-          </Link>
-          <NewDatasetLink />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Datasets" value={datasets.length.toLocaleString('en-US')} hint={`${live} live`} icon={Database} />
+        <StatCard label="Items uploaded" value={totalTasks.toLocaleString('en-US')} icon={Upload} />
+        <StatCard
+          label="Items labeled"
+          value={completedTasks.toLocaleString('en-US')}
+          hint={totalTasks > 0 ? `${Math.round((completedTasks / totalTasks) * 100)}% of all items` : undefined}
+          icon={CheckCircle2}
+        />
+        <StatCard
+          label="Balance"
+          value={formatMoney(viewer.balanceCents)}
+          hint={
+            <Link href="/dashboard/billing" className="hover:text-foreground">
+              View billing →
+            </Link>
+          }
+          icon={Wallet}
+        />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="flex items-center gap-4 rounded-xl border border-border bg-card p-6 shadow-sm">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-full ${stat.tone}`}>
-              <stat.icon className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-              <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <GettingStarted steps={steps} />
 
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Your datasets</h2>
-        <DatasetGrid datasets={datasets} />
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Recent datasets</h2>
+          {datasets.length > 6 && (
+            <Link href="/dashboard/datasets" className="text-sm text-muted-foreground hover:text-foreground">
+              View all →
+            </Link>
+          )}
+        </div>
+        <DatasetGrid datasets={datasets.slice(0, 6)} />
       </section>
     </div>
   );

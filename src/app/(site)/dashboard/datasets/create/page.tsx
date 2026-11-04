@@ -1,291 +1,278 @@
 'use client';
 
-import { useState } from 'react';
+import { FileText, Image as ImageIcon, Loader2, Minus, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { dollarsToCents } from '@/lib/money';
+import { PageHeader } from '@/components/site/page-header';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { MAX_OPTIONS, MAX_REQUIRED_VOTES } from '@/lib/constants';
+import { dollarsToCents, formatMoney } from '@/lib/money';
+import { cn } from '@/lib/utils';
 import { createDatasetAction } from '@/server/actions/datasets';
+
+const textareaClass =
+  'w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30';
 
 export default function CreateDatasetPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState(false);
 
-  // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dataType, setDataType] = useState<'TEXT' | 'IMAGE'>('TEXT');
   const [question, setQuestion] = useState('');
-
-  // Default to 2 as per schema recommendation
-  const [requiredVotes, setRequiredVotes] = useState<number>(2);
-
   const [options, setOptions] = useState<string[]>(['', '']);
+  const [requiredVotes, setRequiredVotes] = useState(3);
   const [reward, setReward] = useState('0.05');
 
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
-  };
+  const rewardCents = dollarsToCents(Number(reward) || 0);
+  const cleanOptions = options.map((o) => o.trim()).filter(Boolean);
+  const perItemCents = rewardCents * requiredVotes;
 
-  const addOption = () => setOptions([...options, '']);
-  const removeOption = (index: number) => setOptions(options.filter((_, i) => i !== index));
+  const setOption = (index: number, value: string) => setOptions((prev) => prev.map((o, i) => (i === index ? value : o)));
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const cleanOptions = options.filter(opt => opt.trim() !== '');
-
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPending(true);
     const result = await createDatasetAction({
       title,
       description,
       dataType,
       question,
       options: cleanOptions,
-      requiredVotes: Number(requiredVotes),
-      rewardCents: dollarsToCents(Number(reward)),
+      requiredVotes,
+      rewardCents,
     });
-
     if (result.ok) {
+      toast.success('Dataset created. Now add your data.');
       router.push(`/dashboard/datasets/${result.data.datasetId}/upload`);
     } else {
       toast.error(result.error);
-      setLoading(false);
+      setPending(false);
     }
   };
 
   return (
-    <div className="bg-background min-h-screen p-4 md:p-6 transition-colors duration-300">
+    <div className="space-y-8">
+      <PageHeader title="New dataset" description="Define one question that evaluators will answer for every item you upload." />
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">Create New Dataset</h1>
-        <p className="text-muted-foreground mt-1">Define the template for your data labeling task.</p>
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-8 rounded-xl max-w-3xl p-6 border border-border shadow-sm bg-card"
-      >
-
-        {/* 1. General Info */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
-            1. General Details
-          </h3>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">Dataset Title</label>
-            <input
-              type="text"
-              required
-              className="w-full p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground placeholder-muted-foreground/50 transition-all"
-              placeholder="e.g. Shoe Sentiment Analysis"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">Instructions</label>
-            <textarea
-              required
-              rows={3}
-              className="w-full p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground placeholder-muted-foreground/50 transition-all"
-              placeholder="Briefly explain what the worker needs to do..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* 2. Task Configuration */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
-            2. Task Configuration
-          </h3>
-
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              type="button"
-              onClick={() => setDataType('TEXT')}
-              className={`p-4 border rounded-lg text-center transition-all ${dataType === 'TEXT'
-                ? 'border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary'
-                : 'border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              📝 Text Analysis
-            </button>
-            <button
-              type="button"
-              onClick={() => setDataType('IMAGE')}
-              className={`p-4 border rounded-lg text-center transition-all ${dataType === 'IMAGE'
-                ? 'border-primary bg-primary/10 text-primary font-bold ring-2 ring-primary'
-                : 'border-border hover:border-muted-foreground/50 text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              🖼️ Image Labeling
-            </button>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1">Question</label>
-            <input
-              type="text"
-              required
-              className="w-full p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground placeholder-muted-foreground/50 transition-all"
-              placeholder={dataType === 'TEXT' ? "e.g. Is this sentiment positive?" : "e.g. What object is in this image?"}
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-            />
-          </div>
-
-          {/* Required Votes Input */}
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-2">
-              <label className="block text-sm font-medium text-muted-foreground">
-                Required Votes per Task
-              </label>
-
-              <div className="group relative flex items-center justify-center cursor-help">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground hover:text-primary transition-colors">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M12 16v-4"></path>
-                  <path d="M12 8h.01"></path>
-                </svg>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-popover text-popover-foreground text-xs rounded-md shadow-lg border border-border invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-50 pointer-events-none">
-                  <p className="font-semibold mb-1">Consensus Control</p>
-                  This determines how many unique workers must answer a task before it is marked as <strong>Completed</strong>.
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-popover"></div>
-                </div>
-              </div>
+      <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[1fr_380px]">
+        <div className="space-y-6">
+          <FormSection step={1} title="Basics" description="Visible to evaluators in the task list.">
+            <div className="space-y-2">
+              <Label htmlFor="title">Name</Label>
+              <Input id="title" required minLength={3} maxLength={120} placeholder="e.g. Product review sentiment" value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
-
-            {/* STEPPER COMPONENT */}
-            <div className="flex items-center w-40 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all overflow-hidden shadow-sm">
-
-              {/* Decrement Button */}
-              <button
-                type="button"
-                onClick={() => setRequiredVotes(prev => Math.max(1, prev - 1))}
-                disabled={requiredVotes <= 1}
-                className="px-3 py-2.5 bg-muted/30 hover:bg-muted text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors border-r border-border"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </button>
-
-              {/* Number Input */}
-              <input
-                type="number"
-                required
-                min={1}
-                max={100}
-                className="w-full p-2 text-center bg-transparent border-none outline-none text-foreground font-medium appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={requiredVotes}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (!isNaN(val)) setRequiredVotes(val);
-                }}
+            <div className="space-y-2">
+              <Label htmlFor="description">Instructions</Label>
+              <textarea
+                id="description"
+                rows={3}
+                maxLength={2000}
+                className={textareaClass}
+                placeholder="Explain how to decide. Clear rules give better labels."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
               />
-
-              {/* Increment Button */}
-              <button
-                type="button"
-                onClick={() => setRequiredVotes(prev => Math.min(100, prev + 1))}
-                disabled={requiredVotes >= 100}
-                className="px-3 py-2.5 bg-muted/30 hover:bg-muted text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors border-l border-border"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </button>
             </div>
+          </FormSection>
 
-            <p className="text-xs text-muted-foreground mt-2">
-              Recommended: <span className="font-mono bg-muted px-1 rounded">2-3</span> for validation.
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="reward" className="block text-sm font-medium text-muted-foreground mb-1">
-              Reward per answer ($)
-            </label>
-            <input
-              id="reward"
-              type="number"
-              required
-              min={0.01}
-              max={100}
-              step={0.01}
-              className="w-40 p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground"
-              value={reward}
-              onChange={(e) => setReward(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Each task costs up to{' '}
-              <span className="font-mono">
-                ${(Number(reward || 0) * requiredVotes).toFixed(2)}
-              </span>{' '}
-              ({requiredVotes} answers × ${Number(reward || 0).toFixed(2)}).
-            </p>
-          </div>
-        </div>
-
-        {/* 3. Define Options */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-foreground border-b border-border pb-2">
-            3. Answer Options
-          </h3>
-          <p className="text-sm text-muted-foreground">Define the choices workers can select from.</p>
-
-          {options.map((opt, idx) => (
-            <div key={idx} className="flex gap-2 items-center">
-              <span className="text-muted-foreground text-sm font-mono w-6">{idx + 1}.</span>
-              <input
-                type="text"
-                required
-                className="flex-1 p-2 bg-background border border-input rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-foreground placeholder-muted-foreground/50 transition-all"
-                placeholder={`Option ${idx + 1}`}
-                value={opt}
-                onChange={(e) => handleOptionChange(idx, e.target.value)}
-              />
-              {options.length > 1 && (
+          <FormSection step={2} title="Question" description="What kind of items, and what should evaluators answer?">
+            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Item type">
+              {(
+                [
+                  { value: 'TEXT', label: 'Text', hint: 'Reviews, messages, sentences', icon: FileText },
+                  { value: 'IMAGE', label: 'Images', hint: 'Public image URLs', icon: ImageIcon },
+                ] as const
+              ).map((type) => (
                 <button
+                  key={type.value}
                   type="button"
-                  onClick={() => removeOption(idx)}
-                  className="text-destructive hover:text-destructive/80 p-2 transition-colors"
-                  title="Remove option"
+                  role="radio"
+                  aria-checked={dataType === type.value}
+                  onClick={() => setDataType(type.value)}
+                  className={cn(
+                    'flex items-start gap-3 rounded-lg border p-4 text-left transition-colors',
+                    dataType === type.value ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:bg-accent',
+                  )}
                 >
-                  ✕
+                  <type.icon className={cn('mt-0.5 h-5 w-5', dataType === type.value ? 'text-primary' : 'text-muted-foreground')} />
+                  <span>
+                    <span className="block text-sm font-medium">{type.label}</span>
+                    <span className="block text-[13px] text-muted-foreground">{type.hint}</span>
+                  </span>
                 </button>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="question">Question</Label>
+              <Input
+                id="question"
+                required
+                minLength={3}
+                maxLength={300}
+                placeholder={dataType === 'TEXT' ? 'How does this customer feel?' : 'What color is the traffic light?'}
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Answer options</Label>
+              <div className="space-y-2">
+                {options.map((option, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[12px] font-medium text-muted-foreground tabular-nums">
+                      {i + 1}
+                    </span>
+                    <Input required maxLength={80} placeholder={`Option ${i + 1}`} value={option} onChange={(e) => setOption(i, e.target.value)} />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setOptions((prev) => prev.filter((_, j) => j !== i))}
+                      disabled={options.length <= 2}
+                      aria-label={`Remove option ${i + 1}`}
+                    >
+                      <X />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              {options.length < MAX_OPTIONS && (
+                <Button type="button" variant="ghost" size="sm" className="text-primary" onClick={() => setOptions((prev) => [...prev, ''])}>
+                  <Plus /> Add option
+                </Button>
               )}
             </div>
-          ))}
+          </FormSection>
 
-          <button
-            type="button"
-            onClick={addOption}
-            className="text-sm text-primary hover:brightness-110 font-medium flex items-center gap-1 mt-2 transition-all"
-          >
-            + Add another option
-          </button>
+          <FormSection step={3} title="Quality & pricing" description="More answers per item means higher confidence, at a higher cost.">
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Answers per item</Label>
+                <div className="flex h-9 w-36 items-center rounded-md border border-input">
+                  <button
+                    type="button"
+                    onClick={() => setRequiredVotes((v) => Math.max(1, v - 1))}
+                    disabled={requiredVotes <= 1}
+                    className="flex h-full w-9 items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    aria-label="Fewer answers"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="flex-1 text-center text-sm font-medium tabular-nums">{requiredVotes}</span>
+                  <button
+                    type="button"
+                    onClick={() => setRequiredVotes((v) => Math.min(MAX_REQUIRED_VOTES, v + 1))}
+                    disabled={requiredVotes >= MAX_REQUIRED_VOTES}
+                    className="flex h-full w-9 items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    aria-label="More answers"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-[13px] text-muted-foreground">3 is a good default for most tasks.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reward">Reward per answer</Label>
+                <div className="relative w-36">
+                  <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                  <Input id="reward" type="number" required min={0.01} max={100} step={0.01} className="pl-7 tabular-nums" value={reward} onChange={(e) => setReward(e.target.value)} />
+                </div>
+                <p className="text-[13px] text-muted-foreground">Higher pay attracts evaluators faster.</p>
+              </div>
+            </div>
+          </FormSection>
         </div>
 
-        {/* Submit Button */}
-        <div className="pt-6 border-t border-border">
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-          >
-            {loading ? 'Creating Dataset...' : 'Create Dataset & Continue to Upload →'}
-          </button>
-        </div>
+        <aside className="lg:sticky lg:top-8 lg:h-fit">
+          <p className="mb-3 text-[13px] font-medium text-muted-foreground">Evaluator preview</p>
+          <PhonePreview title={title} question={question} description={description} options={cleanOptions} dataType={dataType} rewardCents={rewardCents} />
 
+          <div className="mt-5 rounded-xl border border-border bg-card p-4 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Cost per item</span>
+              <span className="font-medium tabular-nums">{formatMoney(perItemCents)}</span>
+            </div>
+            <div className="mt-1.5 flex justify-between">
+              <span className="text-muted-foreground">Per 1,000 items</span>
+              <span className="font-medium tabular-nums">{formatMoney(perItemCents * 1000)}</span>
+            </div>
+            <Button type="submit" className="mt-4 h-10 w-full" disabled={pending}>
+              {pending && <Loader2 className="animate-spin" />}
+              Create & upload data
+            </Button>
+            <p className="mt-2 text-center text-[12px] text-muted-foreground">Starts paused. Nothing is charged until you go live.</p>
+          </div>
+        </aside>
       </form>
+    </div>
+  );
+}
+
+function FormSection({ step, title, description, children }: { step: number; title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-border bg-card">
+      <div className="flex gap-3 border-b border-border px-5 py-4">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[12px] font-semibold text-primary">{step}</span>
+        <div>
+          <h2 className="text-sm font-semibold">{title}</h2>
+          <p className="text-[13px] text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <div className="space-y-5 p-5">{children}</div>
+    </section>
+  );
+}
+
+function PhonePreview({
+  title,
+  question,
+  description,
+  options,
+  dataType,
+  rewardCents,
+}: {
+  title: string;
+  question: string;
+  description: string;
+  options: string[];
+  dataType: 'TEXT' | 'IMAGE';
+  rewardCents: number;
+}) {
+  const shown = options.length > 0 ? options : ['Option 1', 'Option 2'];
+  return (
+    <div aria-hidden className="rounded-[32px] border border-border bg-[#f2f2f7] p-2.5 shadow-xl dark:bg-black">
+      <div className="rounded-[24px] px-4 pt-4 pb-5 text-black dark:text-white">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="text-zinc-500">1 of 10</span>
+          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400">
+            +{formatMoney(rewardCents)} each
+          </span>
+        </div>
+        <div className="mt-2 flex gap-1">
+          {Array.from({ length: 10 }, (_, i) => (
+            <span key={i} className={cn('h-1 flex-1 rounded-full', i === 0 ? 'bg-[#2481cc]/40' : 'bg-black/10 dark:bg-white/15')} />
+          ))}
+        </div>
+        <p className="mt-4 truncate text-[11px] text-zinc-500">{title || 'Dataset name'}</p>
+        <p className={cn('mt-0.5 text-[15px] leading-snug font-semibold', !question && 'text-zinc-400')}>{question || 'Your question appears here'}</p>
+        {description && <p className="mt-1 line-clamp-1 text-[12px] text-zinc-500">{description}</p>}
+        <div className="mt-3 flex min-h-20 items-center justify-center rounded-2xl bg-white px-4 py-4 text-[13px] text-zinc-500 dark:bg-[#1c1c1e]">
+          {dataType === 'IMAGE' ? <ImageIcon className="h-8 w-8 text-zinc-300 dark:text-zinc-600" /> : '“One of your uploaded texts”'}
+        </div>
+        <div className="mt-2.5 space-y-1.5">
+          {shown.slice(0, 5).map((option, i) => (
+            <div key={i} className="flex h-10 items-center gap-2.5 rounded-xl bg-white px-3 text-[13px] font-medium dark:bg-[#1c1c1e]">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black/5 text-[10px] text-zinc-500 dark:bg-white/10">{i + 1}</span>
+              <span className="truncate">{option}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

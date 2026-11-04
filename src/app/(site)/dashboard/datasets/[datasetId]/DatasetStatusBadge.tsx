@@ -8,18 +8,19 @@ import { setDatasetStatusAction } from '@/server/actions/datasets';
 
 type Status = 'ACTIVE' | 'PAUSED' | 'COMPLETED';
 
-const styles: Record<Status, string> = {
-  ACTIVE: 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
-  PAUSED: 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
-  COMPLETED: 'bg-blue-100 text-blue-700 border-blue-200 cursor-default dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
+const styles: Record<Status, { label: string; text: string; dot: string }> = {
+  ACTIVE: { label: 'Live', text: 'text-success', dot: 'bg-success' },
+  PAUSED: { label: 'Paused', text: 'text-warning', dot: 'bg-warning' },
+  COMPLETED: { label: 'Completed', text: 'text-primary', dot: 'bg-primary' },
 };
-const dots: Record<Status, string> = { ACTIVE: 'bg-green-500', PAUSED: 'bg-yellow-500', COMPLETED: 'bg-blue-500' };
 
+/** Status chip that doubles as a pause / resume toggle. */
 export function DatasetStatusBadge({ datasetId, initialStatus }: { datasetId: string; initialStatus: Status }) {
   // Optimistic while the action runs; reverts automatically if it fails.
   const [status, setOptimisticStatus] = useOptimistic(initialStatus);
   const [isPending, startTransition] = useTransition();
   const isEditable = status !== 'COMPLETED';
+  const style = styles[status];
 
   const toggle = () => {
     if (!isEditable || isPending) return;
@@ -37,14 +38,17 @@ export function DatasetStatusBadge({ datasetId, initialStatus }: { datasetId: st
       onClick={toggle}
       disabled={!isEditable || isPending}
       className={cn(
-        'flex items-center rounded-full border px-3 py-1 text-xs font-bold transition-colors select-none',
-        styles[status],
-        isPending && 'cursor-wait opacity-70',
+        'group inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium transition-colors select-none',
+        isEditable && 'hover:bg-accent',
+        style.text,
       )}
-      title={isEditable ? (status === 'ACTIVE' ? 'Click to pause' : 'Click to activate') : 'Completed'}
+      title={isEditable ? (status === 'ACTIVE' ? 'Pause this dataset' : 'Make this dataset live') : 'Completed'}
     >
-      {isPending ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <span className={cn('mr-2 h-2 w-2 rounded-full', dots[status])} />}
-      {status}
+      {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span className={cn('h-2 w-2 rounded-full', style.dot)} />}
+      {style.label}
+      {isEditable && (
+        <span className="text-[12px] font-normal text-muted-foreground">· {status === 'ACTIVE' ? 'Pause' : 'Resume'}</span>
+      )}
     </button>
   );
 }

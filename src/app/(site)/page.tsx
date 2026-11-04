@@ -1,5 +1,7 @@
+import { ArrowRight, BadgeCheck, Coins, FileUp, ListChecks, ScrollText, Send, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { Logo } from '@/components/site/logo';
 import { botUrl } from '@/lib/telegram';
 import { getPlatformStats } from '@/server/queries/public';
 
@@ -7,109 +9,170 @@ const telegramUrl = botUrl(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME);
 
 export default function LandingPage() {
   return (
-    <div className="relative min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/20 overflow-hidden font-sans">
-      
-      {/* --- Background Pattern --- */}
-      {/* A subtle grid pattern that works in both light and dark mode */}
-      <div className="absolute inset-0 -z-10 h-full w-full bg-background">
-        <div className="absolute h-full w-full bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[720px]">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,color-mix(in_oklab,var(--foreground)_5%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklab,var(--foreground)_5%,transparent)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_0%,#000_40%,transparent_100%)] bg-[size:56px_56px]" />
+        <div className="absolute top-[-200px] left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
       </div>
 
-      {/* --- Navigation --- */}
-      <nav className="w-full px-6 py-8 flex justify-between items-center max-w-7xl mx-auto z-10">
-        <div className="flex items-center gap-2">
-          {/* Minimal Logo Icon */}
-          <div className="w-8 h-8 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold text-lg">
-            R
-          </div>
-          <span className="font-bold text-xl tracking-tight">RealCheck</span>
-        </div>
-        
-        <div className="flex items-center gap-6">
-          <Link 
-            href="/login" 
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
-          >
-            Log in
+      <nav className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+        <Logo />
+        <div className="flex items-center gap-1 text-sm">
+          <a href="#how" className="hidden rounded-md px-3 py-2 text-muted-foreground transition-colors hover:text-foreground sm:block">
+            How it works
+          </a>
+          <a href="#evaluators" className="hidden rounded-md px-3 py-2 text-muted-foreground transition-colors hover:text-foreground sm:block">
+            Earn
+          </a>
+          <Link href="/login" className="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:text-foreground">
+            Sign in
           </Link>
-          <Link 
-            href="/dashboard"
-            className="px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity shadow-lg"
-          >
-            Open Dashboard
+          <Link href="/register" className="ml-2 rounded-full bg-foreground px-4 py-2 font-medium text-background transition-opacity hover:opacity-90">
+            Get started
           </Link>
         </div>
       </nav>
 
-      {/* --- Hero Section --- */}
-      <main className="flex-grow flex flex-col items-center justify-center px-6 pt-16 pb-24 text-center max-w-5xl mx-auto z-10">
-        
-        <div className="inline-flex items-center rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-muted-foreground backdrop-blur-sm mb-8">
-          <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
-          Consensus Engine v1.0 Live
-        </div>
+      <main className="relative z-10">
+        {/* Hero */}
+        <section className="mx-auto grid max-w-6xl items-center gap-16 px-6 pt-16 pb-24 lg:grid-cols-[1.1fr_0.9fr] lg:pt-24">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[13px] text-muted-foreground backdrop-blur">
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
+              Human-verified data labeling
+            </span>
+            <h1 className="mt-6 text-5xl leading-[1.05] font-semibold tracking-tight text-balance md:text-6xl">
+              Training data you can{' '}
+              <span className="bg-gradient-to-r from-indigo-400 via-primary to-violet-500 bg-clip-text text-transparent">actually trust.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              Upload text or images, and thousands of evaluators on Telegram label them. Every item is answered by several
+              people and accepted only when they agree, with hidden check questions keeping quality honest.
+            </p>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/register"
+                className="group inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 font-medium text-primary-foreground shadow-lg shadow-primary/25 transition hover:brightness-110"
+              >
+                Start a dataset
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              {telegramUrl && (
+                <a
+                  href={telegramUrl}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-card/60 px-6 font-medium backdrop-blur transition-colors hover:bg-accent"
+                >
+                  <Send className="h-4 w-4" />
+                  Earn on Telegram
+                </a>
+              )}
+            </div>
+            <Suspense fallback={<div className="mt-14 h-[60px]" />}>
+              <PlatformStats />
+            </Suspense>
+          </div>
 
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-[1.1]">
-          Data Labeling, <br className="hidden md:block" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">
-            Verified by Consensus.
-          </span>
-        </h1>
+          <HeroMock />
+        </section>
 
-        <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-10 leading-relaxed">
-          RealCheck leverages distributed human intelligence to validate datasets with cryptographic precision. Ensure quality before you train your models.
-        </p>
+        {/* How it works */}
+        <section id="how" className="border-t border-border bg-card/30 py-24">
+          <div className="mx-auto max-w-6xl px-6">
+            <SectionHeading eyebrow="How it works" title="From raw rows to verified labels in three steps" />
+            <ol className="mt-14 grid gap-6 md:grid-cols-3">
+              {[
+                { icon: FileUp, title: 'Upload your data', text: 'Drop in a CSV or JSON file of texts or image URLs and define one clear question with answer options.' },
+                { icon: Users, title: 'Evaluators answer', text: 'Items go to evaluators in Telegram. Each one is answered by several people independently.' },
+                { icon: ListChecks, title: 'Export consensus', text: 'Download the agreed label, agreement score and vote breakdown for every item as CSV or JSON.' },
+              ].map((step, i) => (
+                <li key={step.title} className="relative rounded-2xl border border-border bg-card p-7">
+                  <span className="absolute top-7 right-7 font-mono text-sm text-muted-foreground/60">0{i + 1}</span>
+                  <step.icon className="h-6 w-6 text-primary" />
+                  <h3 className="mt-5 text-lg font-semibold">{step.title}</h3>
+                  <p className="mt-2 leading-relaxed text-muted-foreground">{step.text}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
 
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <Link
-            href="/register"
-            className="px-8 py-4 rounded-lg bg-primary text-primary-foreground font-semibold text-lg hover:brightness-110 transition-all shadow-md hover:shadow-xl active:scale-95"
-          >
-            Label my data
-          </Link>
-          {telegramUrl && (
-            <a
-              href={telegramUrl}
-              className="px-8 py-4 rounded-lg border border-border bg-card hover:bg-muted/50 font-medium text-lg transition-colors"
+        {/* Quality */}
+        <section className="py-24">
+          <div className="mx-auto max-w-6xl px-6">
+            <SectionHeading eyebrow="Quality, built in" title="Designed so careless answers don’t make it into your data" />
+            <div className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2">
+              {[
+                { icon: BadgeCheck, title: 'Consensus voting', text: 'An item is labeled only when the required number of evaluators have answered. Ties are flagged, never guessed.' },
+                { icon: ShieldCheck, title: 'Hidden check questions', text: 'Mix in items with known answers. Evaluators who miss them lose reputation and stop receiving work.' },
+                { icon: Coins, title: 'Pay per accepted answer', text: 'You fund a balance and are charged only for answers you receive. No subscriptions, no minimums.' },
+                { icon: ScrollText, title: 'Complete audit trail', text: 'Every vote and every cent is recorded in an append-only ledger you can reconcile at any time.' },
+              ].map((feature) => (
+                <div key={feature.title} className="bg-background p-8">
+                  <feature.icon className="h-5 w-5 text-primary" />
+                  <h3 className="mt-4 font-semibold">{feature.title}</h3>
+                  <p className="mt-2 leading-relaxed text-muted-foreground">{feature.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Evaluators */}
+        <section id="evaluators" className="px-6 pb-24">
+          <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500 to-indigo-600 px-8 py-14 text-white md:px-14">
+            <div aria-hidden className="absolute -right-24 -bottom-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
+            <div className="relative grid items-center gap-10 md:grid-cols-[1.4fr_1fr]">
+              <div>
+                <p className="text-sm font-medium text-white/80">For evaluators</p>
+                <h2 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">Earn from your phone, a minute at a time.</h2>
+                <p className="mt-4 max-w-lg text-white/85">
+                  Open RealCheck in Telegram, answer quick questions about texts and images, and get paid for every accepted
+                  answer. No sign-up forms.
+                </p>
+              </div>
+              {telegramUrl && (
+                <a
+                  href={telegramUrl}
+                  className="inline-flex h-12 items-center justify-center gap-2 justify-self-start rounded-full bg-white px-6 font-semibold text-indigo-700 shadow-xl transition hover:bg-white/90 md:justify-self-end"
+                >
+                  <Send className="h-4 w-4" />
+                  Open in Telegram
+                </a>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="border-t border-border py-24 text-center">
+          <div className="mx-auto max-w-2xl px-6">
+            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">Ready to label your first dataset?</h2>
+            <p className="mt-4 text-muted-foreground">Create an account, upload a file and see labels come in within minutes.</p>
+            <Link
+              href="/register"
+              className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-7 font-medium text-background transition-opacity hover:opacity-90"
             >
-              Earn on Telegram
-            </a>
-          )}
-        </div>
-
-        <Suspense fallback={<div className="mt-12 h-16" />}>
-          <PlatformStats />
-        </Suspense>
-
+              Create a free account <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
       </main>
 
-      {/* --- Feature Highlights (Minimal) --- */}
-      <section id="features" className="w-full border-t border-border bg-card/30 backdrop-blur-sm py-20">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
-          <FeatureCard 
-            title="Consensus Validation"
-            description="Tasks require multi-party agreement before being marked as valid. Trust the crowd, verified by code."
-            icon={<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>}
-          />
-          <FeatureCard 
-            title="Instant Settlements"
-            description="Workers are rewarded immediately upon reaching consensus. Reputation scores prevent bad actors."
-            icon={<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>}
-          />
-          <FeatureCard 
-            title="Dataset Integrity"
-            description="Immutable records of every vote and validation action. Your data lineage is preserved."
-            icon={<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>}
-          />
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row">
+          <Logo className="text-foreground" />
+          <p>© RealCheck. All rights reserved.</p>
         </div>
-      </section>
-
-      {/* --- Simple Footer --- */}
-      <footer className="py-8 text-center text-sm text-muted-foreground border-t border-border bg-background">
-        <p>© RealCheck. All rights reserved.</p>
       </footer>
+    </div>
+  );
+}
 
+function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div className="max-w-2xl">
+      <p className="text-sm font-medium text-primary">{eyebrow}</p>
+      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance md:text-4xl">{title}</h2>
     </div>
   );
 }
@@ -123,27 +186,59 @@ async function PlatformStats() {
     { label: 'Evaluators', value: stats.evaluators },
   ];
   return (
-    <dl className="mt-12 grid grid-cols-3 gap-8 text-center">
+    <dl className="mt-14 flex gap-10">
       {items.map((item) => (
         <div key={item.label}>
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">{item.label}</dt>
-          <dd className="text-2xl font-bold tabular-nums">{item.value.toLocaleString('en-US')}</dd>
+          <dd className="text-2xl font-semibold tracking-tight tabular-nums">{item.value.toLocaleString('en-US')}</dd>
+          <dt className="mt-0.5 text-[13px] text-muted-foreground">{item.label}</dt>
         </div>
       ))}
     </dl>
   );
 }
 
-function FeatureCard({ title, description, icon }: { title: string, description: string, icon: React.ReactNode }) {
+/** A static rendering of the Mini App task screen, to show what evaluators see. */
+function HeroMock() {
   return (
-    <div className="group p-6 rounded-2xl border border-border/50 hover:border-primary/20 hover:bg-muted/30 transition-all duration-300">
-      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          {icon}
-        </svg>
+    <div aria-hidden className="relative mx-auto w-full max-w-sm select-none">
+      <div className="absolute -inset-6 rounded-[44px] bg-gradient-to-b from-primary/25 to-transparent blur-2xl" />
+      <div className="relative rounded-[36px] border border-border bg-[#f2f2f7] p-3 shadow-2xl dark:bg-black">
+        <div className="rounded-[28px] bg-[#f2f2f7] px-4 pt-5 pb-6 text-black dark:bg-black dark:text-white">
+          <div className="flex items-center justify-between text-[12px]">
+            <span className="text-zinc-500">3 of 10</span>
+            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 font-semibold text-emerald-600 dark:text-emerald-400">+$0.15</span>
+          </div>
+          <div className="mt-2 flex gap-1">
+            {Array.from({ length: 10 }, (_, i) => (
+              <span key={i} className={`h-1 flex-1 rounded-full ${i < 2 ? 'bg-[#2481cc]' : i === 2 ? 'bg-[#2481cc]/40' : 'bg-black/10 dark:bg-white/15'}`} />
+            ))}
+          </div>
+          <p className="mt-5 text-[12px] text-zinc-500">Shoe review sentiment</p>
+          <p className="mt-1 text-[17px] leading-snug font-semibold">How does this customer feel?</p>
+          <div className="mt-4 rounded-2xl bg-white px-4 py-4 text-[15px] leading-relaxed dark:bg-[#1c1c1e]">
+            “Best purchase this year. I already ordered a second pair.”
+          </div>
+          <div className="mt-3 space-y-2">
+            {['Positive', 'Negative', 'Neutral'].map((option, i) => (
+              <div
+                key={option}
+                className={`flex h-11 items-center gap-3 rounded-2xl px-3 text-[15px] font-medium ${i === 0 ? 'bg-[#2481cc] text-white' : 'bg-white dark:bg-[#1c1c1e]'}`}
+              >
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] ${i === 0 ? 'bg-white/20' : 'bg-black/5 text-zinc-500 dark:bg-white/10'}`}>
+                  {i === 0 ? '✓' : i + 1}
+                </span>
+                {option}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-      <h3 className="text-xl font-bold mb-2 text-foreground">{title}</h3>
-      <p className="text-muted-foreground leading-relaxed">{description}</p>
+      <div className="absolute -bottom-6 -left-10 hidden rounded-2xl border border-border bg-card/90 px-4 py-3 shadow-xl backdrop-blur sm:block">
+        <p className="text-[11px] text-muted-foreground">Consensus reached</p>
+        <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold">
+          <BadgeCheck className="h-4 w-4 text-success" /> Positive · 100%
+        </p>
+      </div>
     </div>
   );
 }

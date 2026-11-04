@@ -27,66 +27,105 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-section-label: var(--section-label);
+  --color-accent-text: var(--accent-text, var(--primary));
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
 }
 
-/* Light (Telegram light palette) */
+/* ---------- Website & dashboard ---------- */
 :root {
-  --radius: 0.5rem;
+  --radius: 0.75rem;
   --background: #ffffff;
-  --foreground: #000000;
+  --foreground: #09090b;
   --card: #ffffff;
-  --card-foreground: #000000;
+  --card-foreground: #09090b;
   --popover: #ffffff;
-  --popover-foreground: #000000;
-  --primary: #3390ec;
+  --popover-foreground: #09090b;
+  --primary: #4f46e5;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f5;
-  --secondary-foreground: #000000;
+  --secondary-foreground: #18181b;
   --muted: #f4f4f5;
-  --muted-foreground: #707579;
+  --muted-foreground: #71717a;
   --accent: #f4f4f5;
-  --accent-foreground: #000000;
-  --destructive: #ef4444;
+  --accent-foreground: #18181b;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #dfe1e5;
-  --input: #dfe1e5;
-  --ring: #3390ec;
+  --success: #16a34a;
+  --warning: #d97706;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #4f46e5;
+  --section-label: #71717a;
 }
 
-/* Dark (Telegram dark palette) */
 .dark {
-  --background: #1c1c1e;
-  --foreground: #ffffff;
-  --card: #2c2c2e;
-  --card-foreground: #ffffff;
-  --popover: #1c1c1e;
-  --popover-foreground: #ffffff;
-  --primary: #8774e1;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #111113;
+  --card-foreground: #fafafa;
+  --popover: #111113;
+  --popover-foreground: #fafafa;
+  --primary: #6366f1;
   --primary-foreground: #ffffff;
-  --secondary: #000000;
-  --secondary-foreground: #ffffff;
-  --muted: #000000;
-  --muted-foreground: #aaaaaa;
-  --accent: #2c2c2e;
-  --accent-foreground: #ffffff;
-  --destructive: #ff453a;
-  --destructive-foreground: #ffffff;
-  --border: #3d3d41;
-  --input: #3d3d41;
-  --ring: #8774e1;
+  --secondary: #18181b;
+  --secondary-foreground: #fafafa;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #1c1c20;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --border: #232327;
+  --input: #2a2a2f;
+  --ring: #6366f1;
+  --section-label: #8e8e96;
 }
 
-/* Inside Telegram, telegram-web-app.js sets --tg-theme-* on <html>; use the user's
-   actual theme. The fallbacks keep the palettes above when a value is missing. */
-:root[style*="--tg-theme"] {
-  --background: var(--tg-theme-bg-color);
+/* ---------- Mini App ----------
+   Telegram's "grouped sections" look: a tinted page with section cards on top.
+   These are fallbacks for a plain browser; inside Telegram the user's theme wins. */
+.tma {
+  --background: #f2f2f7;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --primary: #2481cc;
+  --ring: #2481cc;
+  --muted: #e9e9ef;
+  --accent: #e9e9ef;
+  --secondary: #e9e9ef;
+  --muted-foreground: #8e8e93;
+  --section-label: #6d6d72;
+  --border: #e3e3e8;
+  --accent-text: #2481cc;
+}
+.tma.dark {
+  --background: #000000;
+  --card: #1c1c1e;
+  --popover: #1c1c1e;
+  --primary: #3e88f7;
+  --ring: #3e88f7;
+  --muted: #2c2c2e;
+  --accent: #2c2c2e;
+  --secondary: #2c2c2e;
+  --muted-foreground: #8e8e93;
+  --section-label: #8d8e93;
+  --border: #2c2c2e;
+  --accent-text: #3e88f7;
+}
+
+/* Inside Telegram, telegram-web-app.js sets --tg-theme-* on <html>. */
+html.tma[style*="--tg-theme"] {
+  --background: var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color));
   --foreground: var(--tg-theme-text-color);
-  --card: var(--tg-theme-section-bg-color, var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color)));
+  --card: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color));
   --card-foreground: var(--tg-theme-text-color);
-  --popover: var(--tg-theme-bg-color);
+  --popover: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color));
   --popover-foreground: var(--tg-theme-text-color);
   --primary: var(--tg-theme-button-color);
   --primary-foreground: var(--tg-theme-button-text-color);
@@ -97,9 +136,11 @@
   --accent: var(--tg-theme-secondary-bg-color);
   --accent-foreground: var(--tg-theme-text-color);
   --destructive: var(--tg-theme-destructive-text-color, #ef4444);
-  --border: var(--tg-theme-section-separator-color, var(--tg-theme-hint-color));
+  --border: var(--tg-theme-section-separator-color, var(--tg-theme-secondary-bg-color));
   --input: var(--tg-theme-section-separator-color, var(--tg-theme-hint-color));
   --ring: var(--tg-theme-button-color);
+  --section-label: var(--tg-theme-section-header-text-color, var(--tg-theme-hint-color));
+  --accent-text: var(--tg-theme-accent-text-color, var(--tg-theme-link-color));
 }
 
 /* Keep content clear of notches and Telegram's own controls in fullscreen mode. */
@@ -117,8 +158,35 @@
   body {
     @apply bg-background text-foreground;
   }
-  .tma {
+  .tma body {
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 25%, transparent);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bottom tab bar height, so scrolling content clears it. */
+.tma {
+  --tab-bar-height: 64px;
+}
+
+@keyframes rc-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+.animate-pop { animation: rc-pop 220ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
