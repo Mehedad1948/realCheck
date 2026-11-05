@@ -2,12 +2,13 @@
 
 import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
 
 // Loaded in its own chunk on the client only, so the shader code never blocks the first paint.
 const Silk = dynamic(() => import('./silk'), { ssr: false });
 
-/** Animated silk behind the landing page hero. Fades in once WebGL is ready and out towards the content. */
-export function SilkBackground() {
+/** Animated silk that fills its nearest positioned parent. Fades in once WebGL is ready and out towards the bottom. */
+export function SilkBackground({ className }: { className?: string }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === 'dark';
 
@@ -15,7 +16,10 @@ export function SilkBackground() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 top-0 h-[min(100svh,900px)] mask-[linear-gradient(to_bottom,#000_45%,transparent)] opacity-70 dark:opacity-60"
+      className={cn(
+        'pointer-events-none absolute inset-0 mask-[linear-gradient(to_bottom,#000_55%,transparent)] opacity-60 dark:opacity-70',
+        className,
+      )}
     >
       <Silk
         color={dark ? '#4f46e5' : '#c7d2fe'}
