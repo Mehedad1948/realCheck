@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 // Loaded in its own chunk on the client only, so the shader code never blocks the first paint.
 const Silk = dynamic(() => import('./silk'), { ssr: false });
 
-/** Animated silk that fills its nearest positioned parent. Fades in once WebGL is ready and out towards the bottom. */
+/** Animated silk that fills its nearest positioned parent. Fades in once WebGL is ready. */
 export function SilkBackground({ className }: { className?: string }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === 'dark';
@@ -17,7 +17,7 @@ export function SilkBackground({ className }: { className?: string }) {
     <div
       aria-hidden
       className={cn(
-        'pointer-events-none absolute inset-0 mask-[linear-gradient(to_bottom,#000_55%,transparent)] opacity-60 dark:opacity-70',
+        'pointer-events-none absolute inset-0 opacity-60 dark:opacity-70',
         className,
       )}
     >

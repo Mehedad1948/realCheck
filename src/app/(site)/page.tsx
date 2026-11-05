@@ -29,9 +29,13 @@ export default function LandingPage() {
     <div className="relative min-h-screen bg-background text-foreground">
       <LandingIntro />
       <section className="relative isolate flex min-h-svh flex-col overflow-hidden">
-        {/* The glow stays as a fallback where WebGL is unavailable; the silk paints over it. */}
-        <div aria-hidden className="pointer-events-none absolute -top-50 left-1/2 -z-10 h-130 w-225 -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
-        <SilkBackground className="-z-10" />
+        {/* Rounded panel that opens to full bleed on scroll (.hero-frame in globals.css). The glow is a
+            fallback where WebGL is unavailable; the silk paints over it. */}
+        <div aria-hidden className="hero-frame pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-muted/40 dark:bg-white/[0.02]">
+          <div className="absolute -top-50 left-1/2 h-130 w-225 -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
+          <SilkBackground />
+        </div>
+        <div aria-hidden className="hero-frame-border pointer-events-none absolute -z-10" />
 
         <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
           <Logo />

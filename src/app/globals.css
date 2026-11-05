@@ -218,3 +218,57 @@ html[data-intro='play'] .landing-intro {
 @media (prefers-reduced-motion: reduce) {
   .landing-rise { animation: none; }
 }
+
+/* Landing hero panel: the silk starts inside a rounded box below the nav and opens to full bleed over
+   the first stretch of scrolling. It is clipped, never resized, so the WebGL canvas doesn't
+   reallocate mid-scroll. clip-path would cut off a border, so the outline is a sibling layer sharing
+   the same geometry; it fades out as the panel reaches the screen edges. Browsers without
+   scroll-driven animations keep the box. */
+.hero-frame,
+.hero-frame-border {
+  --frame-top: 88px;
+  --frame-x: 16px;
+  --frame-bottom: 16px;
+  --frame-radius: 24px;
+}
+@media (min-width: 768px) {
+  .hero-frame,
+  .hero-frame-border {
+    --frame-x: 40px;
+    --frame-bottom: 32px;
+    --frame-radius: 36px;
+  }
+}
+@media (min-width: 1280px) {
+  .hero-frame,
+  .hero-frame-border {
+    --frame-x: 64px;
+  }
+}
+.hero-frame {
+  clip-path: inset(var(--frame-top) var(--frame-x) var(--frame-bottom) round var(--frame-radius));
+}
+.hero-frame-border {
+  top: var(--frame-top);
+  right: var(--frame-x);
+  bottom: var(--frame-bottom);
+  left: var(--frame-x);
+  border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+  border-radius: var(--frame-radius);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+@supports (animation-timeline: scroll()) {
+  .hero-frame,
+  .hero-frame-border {
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root);
+    animation-range: 0 55vh;
+  }
+  .hero-frame { animation-name: rc-frame-open; }
+  .hero-frame-border { animation-name: rc-frame-border-open; }
+}
+@keyframes rc-frame-open { to { clip-path: inset(0 0 0 0 round 0); } }
+@keyframes rc-frame-border-open {
+  to { top: 0; right: 0; bottom: 0; left: 0; border-radius: 0; border-color: transparent; box-shadow: none; }
+}
