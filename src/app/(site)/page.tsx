@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
 import { Logo } from '@/components/site/logo';
+import { SilkBackground } from '@/components/site/silk-background';
 import { botUrl } from '@/lib/telegram';
 import { getPlatformStats } from '@/server/queries/public';
 
@@ -11,10 +12,11 @@ const telegramUrl = botUrl(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME);
 export default function LandingPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      {/* The glow stays as a fallback where WebGL is unavailable; the silk paints over it. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[720px]">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,color-mix(in_oklab,var(--foreground)_5%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklab,var(--foreground)_5%,transparent)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_0%,#000_40%,transparent_100%)] bg-[size:56px_56px]" />
         <div className="absolute top-[-200px] left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
       </div>
+      <SilkBackground />
 
       <nav className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <Logo />
