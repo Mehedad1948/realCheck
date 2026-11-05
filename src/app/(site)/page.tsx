@@ -26,17 +26,20 @@ const principles = [
 
 export default function LandingPage() {
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
+    // isolate keeps the background layers (-z-10) above the body but below all content.
+    <div className="relative isolate min-h-screen text-foreground">
       <LandingIntro />
-      <section className="relative isolate flex min-h-svh flex-col overflow-hidden">
-        {/* Rounded panel that opens to full bleed on scroll (.hero-frame in globals.css). The glow is a
-            fallback where WebGL is unavailable; the silk paints over it. */}
-        <div aria-hidden className="hero-frame pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-muted/40 dark:bg-white/[0.02]">
-          <div className="absolute -top-50 left-1/2 h-130 w-225 -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
-          <SilkBackground />
-        </div>
-        <div aria-hidden className="hero-frame-border pointer-events-none absolute -z-10" />
+      {/* Silk fixed behind the whole page: a rounded panel that opens to full bleed on scroll, then dims
+          behind the content further down (.hero-frame in globals.css). The glow is a fallback where
+          WebGL is unavailable; the silk paints over it. */}
+      <div aria-hidden className="hero-frame pointer-events-none inset-0 -z-10 overflow-hidden bg-muted/40 dark:bg-white/[0.02]">
+        <div className="absolute -top-50 left-1/2 h-130 w-225 -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
+        <SilkBackground />
+        <div className="hero-scrim absolute inset-0 bg-background" />
+      </div>
+      <div aria-hidden className="hero-frame-border pointer-events-none -z-10" />
 
+      <header className="fixed inset-x-0 top-0 z-40">
         <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
           <Logo />
           <div className="flex items-center gap-1 text-sm">
@@ -53,7 +56,10 @@ export default function LandingPage() {
             </Link>
           </div>
         </nav>
+      </header>
 
+      {/* pt-22 clears the fixed header. */}
+      <section className="relative flex min-h-svh flex-col pt-22">
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">
           <HeroTitle className="landing-rise text-[clamp(2.75rem,7vw,5.75rem)] leading-[1.02] tracking-[-0.03em]" />
           <p className="landing-rise mt-7 text-base text-muted-foreground [--rise-delay:150ms] md:text-lg">
@@ -83,7 +89,7 @@ export default function LandingPage() {
       </section>
 
       <main>
-        <section id="how" className="mx-auto max-w-6xl px-6 py-32">
+        <section id="how" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-32">
           <h2 className="text-sm text-muted-foreground">How it works</h2>
           <ol className="mt-12 grid gap-12 md:grid-cols-3 md:gap-8">
             {steps.map((step, i) => (
@@ -99,7 +105,7 @@ export default function LandingPage() {
         <section className="mx-auto max-w-6xl px-6 pb-32">
           <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-4">
             {principles.map((item) => (
-              <li key={item.label} className="flex flex-col gap-6 bg-background p-6">
+              <li key={item.label} className="flex flex-col gap-6 bg-background/85 p-6">
                 <item.icon className="h-5 w-5 text-primary" strokeWidth={1.5} />
                 <span className="text-sm font-medium">{item.label}</span>
               </li>

@@ -219,13 +219,14 @@ html[data-intro='play'] .landing-intro {
   .landing-rise { animation: none; }
 }
 
-/* Landing hero panel: the silk starts inside a rounded box below the nav and opens to full bleed over
-   the first stretch of scrolling. It is clipped, never resized, so the WebGL canvas doesn't
-   reallocate mid-scroll. clip-path would cut off a border, so the outline is a sibling layer sharing
-   the same geometry; it fades out as the panel reaches the screen edges. Browsers without
-   scroll-driven animations keep the box. */
+/* Landing silk panel: the silk starts inside a rounded box below the nav and opens to full bleed over
+   the first stretch of scrolling. Where scroll-driven animations are supported it is fixed behind the
+   whole page and dims as content scrolls over it; elsewhere it stays a static box in the hero.
+   It is clipped, never resized, so the WebGL canvas doesn't reallocate mid-scroll. clip-path would
+   cut off a border, so the outline is a sibling layer sharing the same geometry. */
 .hero-frame,
 .hero-frame-border {
+  position: absolute;
   --frame-top: 88px;
   --frame-x: 16px;
   --frame-bottom: 16px;
@@ -246,29 +247,39 @@ html[data-intro='play'] .landing-intro {
   }
 }
 .hero-frame {
+  height: 100svh;
   clip-path: inset(var(--frame-top) var(--frame-x) var(--frame-bottom) round var(--frame-radius));
 }
 .hero-frame-border {
   top: var(--frame-top);
   right: var(--frame-x);
-  bottom: var(--frame-bottom);
+  height: calc(100svh - var(--frame-top) - var(--frame-bottom));
   left: var(--frame-x);
   border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
   border-radius: var(--frame-radius);
   box-shadow: inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent);
 }
+.hero-scrim { opacity: 0; }
 @supports (animation-timeline: scroll()) {
   .hero-frame,
   .hero-frame-border {
+    position: fixed;
+  }
+  .hero-frame,
+  .hero-frame-border,
+  .hero-scrim {
     animation-timing-function: linear;
     animation-fill-mode: both;
     animation-timeline: scroll(root);
-    animation-range: 0 55vh;
   }
-  .hero-frame { animation-name: rc-frame-open; }
-  .hero-frame-border { animation-name: rc-frame-border-open; }
+  .hero-frame { animation-name: rc-frame-open; animation-range: 0 55vh; }
+  .hero-frame-border { animation-name: rc-frame-border-open; animation-range: 0 55vh; }
+  /* Content past the hero needs to stay readable, so the silk recedes once the panel is open. */
+  .hero-scrim { animation-name: rc-scrim-in; animation-range: 60vh 140vh; }
 }
 @keyframes rc-frame-open { to { clip-path: inset(0 0 0 0 round 0); } }
 @keyframes rc-frame-border-open {
-  to { top: 0; right: 0; bottom: 0; left: 0; border-radius: 0; border-color: transparent; box-shadow: none; }
+  to { top: 0; right: 0; height: 100svh; left: 0; border-radius: 0; border-color: transparent; box-shadow: none; }
 }
+@keyframes rc-scrim-in { to { opacity: 0.78; } }
+
