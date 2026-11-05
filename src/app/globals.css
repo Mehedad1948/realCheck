@@ -190,3 +190,31 @@ html.tma[style*="--tg-theme"] {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Landing intro: a check mark drawn once per session on the first load of "/". The script in the
+   (site) layout sets data-intro="play" before first paint; without it (no JS, later visits, reduced
+   motion) the overlay never shows. It then moves to "done" so a client-side revisit doesn't replay. */
+.landing-intro { display: none; }
+html[data-intro='play'] { --intro-delay: 1.75s; }
+html[data-intro='play'] .landing-intro {
+  display: flex;
+  animation: rc-intro-out 0.8s cubic-bezier(0.65, 0, 0.35, 1) 1.45s forwards;
+}
+.landing-intro svg { animation: rc-intro-mark-out 0.8s cubic-bezier(0.65, 0, 0.35, 1) 1.45s forwards; }
+.landing-intro .intro-ring,
+.landing-intro .intro-check { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.landing-intro .intro-ring { animation: rc-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.1s forwards; }
+.landing-intro .intro-check { animation: rc-draw 0.5s cubic-bezier(0.33, 1, 0.68, 1) 0.75s forwards; }
+@keyframes rc-draw { to { stroke-dashoffset: 0; } }
+@keyframes rc-intro-out { to { opacity: 0; visibility: hidden; } }
+@keyframes rc-intro-mark-out { to { transform: scale(1.12); opacity: 0; } }
+
+/* Hero entrance, held back until the intro has cleared. Stagger with --rise-delay. */
+.landing-rise {
+  animation: rc-rise 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--intro-delay, 0s) + var(--rise-delay, 0s));
+}
+@keyframes rc-rise { from { opacity: 0; transform: translateY(14px); filter: blur(8px); } }
+@media (prefers-reduced-motion: reduce) {
+  .landing-rise { animation: none; }
+}

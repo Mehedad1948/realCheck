@@ -2,15 +2,14 @@ import { ArrowRight, BadgeCheck, Coins, ScrollText, ShieldCheck } from 'lucide-r
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { HeroTitle } from '@/components/site/hero-title';
+import { LandingIntro } from '@/components/site/landing-intro';
 import { Logo } from '@/components/site/logo';
 import { SilkBackground } from '@/components/site/silk-background';
 import { botUrl } from '@/lib/telegram';
 import { getPlatformStats } from '@/server/queries/public';
 
 const telegramUrl = botUrl(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME);
-
-// Staggered entrance for the hero. Skipped entirely for visitors who prefer reduced motion.
-const rise = 'motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:fill-mode-both motion-safe:duration-1000';
 
 const steps = [
   { title: 'Upload', text: 'A CSV or JSON file and one question.' },
@@ -28,6 +27,7 @@ const principles = [
 export default function LandingPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground">
+      <LandingIntro />
       <section className="relative isolate flex min-h-svh flex-col overflow-hidden">
         {/* The glow stays as a fallback where WebGL is unavailable; the silk paints over it. */}
         <div aria-hidden className="pointer-events-none absolute -top-50 left-1/2 -z-10 h-130 w-225 -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
@@ -50,16 +50,12 @@ export default function LandingPage() {
           </div>
         </nav>
 
-        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-6 py-24">
-          <h1 className={`${rise} text-[clamp(3rem,9vw,7.5rem)] leading-[0.95] font-medium tracking-[-0.045em]`}>
-            Training data
-            <br />
-            <span className="bg-linear-to-r from-foreground via-foreground/70 to-foreground/30 bg-clip-text text-transparent">
-              you can trust.
-            </span>
-          </h1>
-          <p className={`${rise} mt-8 text-lg text-muted-foreground delay-150 md:text-xl`}>Labeled by people. Accepted only on consensus.</p>
-          <div className={`${rise} mt-12 flex flex-wrap items-center gap-x-8 gap-y-4 delay-300`}>
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+          <HeroTitle className="landing-rise text-[clamp(2.75rem,7vw,5.75rem)] leading-[1.02] tracking-[-0.03em]" />
+          <p className="landing-rise mt-7 text-base text-muted-foreground [--rise-delay:150ms] md:text-lg">
+            Labeled by people. Accepted only on consensus.
+          </p>
+          <div className="landing-rise mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 [--rise-delay:300ms]">
             <Link
               href="/register"
               className="group inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-7 font-medium text-background transition-opacity hover:opacity-90"
@@ -75,7 +71,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className={`${rise} mx-auto w-full max-w-6xl px-6 pb-10 delay-500`}>
+        <div className="landing-rise mx-auto flex w-full max-w-6xl justify-center px-6 pb-10 [--rise-delay:500ms]">
           <Suspense fallback={<div className="h-13" />}>
             <PlatformStats />
           </Suspense>
@@ -153,7 +149,7 @@ async function PlatformStats() {
   return (
     <dl className="flex gap-10 text-sm">
       {items.map((item) => (
-        <div key={item.label} className="flex flex-col-reverse">
+        <div key={item.label} className="flex flex-col-reverse items-center">
           <dt className="text-muted-foreground">{item.label}</dt>
           <dd className="text-lg font-medium tabular-nums">{item.value.toLocaleString('en-US')}</dd>
         </div>
