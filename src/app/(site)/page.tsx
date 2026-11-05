@@ -1,5 +1,6 @@
 import { ArrowRight, BadgeCheck, Coins, FileUp, ListChecks, ScrollText, Send, ShieldCheck, Users } from 'lucide-react';
 import Link from 'next/link';
+import { connection } from 'next/server';
 import { Suspense } from 'react';
 import { Logo } from '@/components/site/logo';
 import { botUrl } from '@/lib/telegram';
@@ -177,9 +178,15 @@ function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) 
   );
 }
 
-// Cached for hours and shared by every visitor, so the page stays effectively static.
+// Cached for hours and shared by every visitor. Read at request time rather than during the build,
+// so deploying never depends on the database; if it is unreachable the stats are simply hidden.
 async function PlatformStats() {
-  const stats = await getPlatformStats();
+  await connection();
+  const stats = await getPlatformStats().catch((error: unknown) => {
+    console.error('Failed to load platform stats', error);
+    return null;
+  });
+  if (!stats) return null;
   const items = [
     { label: 'Live datasets', value: stats.activeDatasets },
     { label: 'Labels collected', value: stats.labels },
