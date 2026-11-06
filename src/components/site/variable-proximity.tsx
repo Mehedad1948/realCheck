@@ -12,6 +12,8 @@ const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : use
 const GAUSSIAN_EDGE = Math.exp(-2);
 const WAVE_PERIOD = 3.2;
 const WAVE_PEAK = 0.7;
+const SWEEP_FIRST = 2.6;
+const SWEEP_PEAK = 0.9;
 
 type Falloff = 'linear' | 'exponential' | 'gaussian';
 
@@ -65,6 +67,17 @@ export type VariableProximityProps = {
   lift?: number;
   /** While the cursor is away, a gentle wave of weight travels across the text. */
   idleWave?: boolean;
+  /** Index of a word that a phantom cursor sweeps across, first letter to last, every `sweepEvery` seconds. */
+  sweepWord?: number;
+  /** Seconds between sweeps. */
+  sweepEvery?: number;
+  /** Seconds one sweep takes to cross the word. */
+  sweepLength?: number;
+  /**
+   * Seconds to hold every sweep back by. Sweeps run on the page's clock, so instances sharing
+   * `sweepEvery` stay in step and can hand a sweep from one word to the next.
+   */
+  sweepDelay?: number;
   /** Font size. Numbers are pixels. Inherits when unset. */
   fontSize?: number | string;
   className?: string;
@@ -84,6 +97,10 @@ export default function VariableProximity({
   scale = 1,
   lift = 0,
   idleWave = false,
+  sweepWord,
+  sweepEvery = 6,
+  sweepLength = 1.4,
+  sweepDelay = 0,
   fontSize,
   className,
   style,
@@ -173,6 +190,17 @@ export default function VariableProximity({
     const transformed = growth !== 0 || rise !== 0;
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const waving = idleWave && !reduced;
+    // Letter range of the swept word. Letter indices skip spaces, like the letter spans below.
+    const words = label.split(' ');
+    const sweepFrom = sweepWord !== undefined && words[sweepWord] ? words.slice(0, sweepWord).join('').length : -1;
+    const sweepTo = sweepFrom + (sweepWord !== undefined ? (words[sweepWord]?.length ?? 0) : 0) - 1;
+    const sweeping = sweepFrom >= 0 && !reduced;
+    const sweepRadius = radius * 0.6;
+    const sweepPeriod = Math.max(1, sweepEvery) * 1000;
+    // Measured from page load rather than mount, so a remount (fonts settling, a resize) keeps the beat.
+    let sweepAt = (SWEEP_FIRST + Math.max(0, sweepDelay)) * 1000;
+    let sweepRunning = false;
+    let sweepTimer = 0;
     let frame = 0;
     let lastTime = 0;
     let dirty = true;
@@ -250,12 +278,35 @@ export default function VariableProximity({
         measure();
         dirty = false;
       }
-      if (waving && layoutDirty) {
+      if ((waving || sweeping) && layoutDirty) {
         measureAnchors();
         layoutDirty = false;
       }
 
       if (nearAny) lastNear = now;
+
+      // The phantom cursor crosses the word from just before its first letter to just past its last.
+      // A sweep is skipped while the real cursor is on the text, so the two never fight.
+      let sweepPos: number | null = null;
+      // The tolerance covers a timer firing a hair early; without it the wake-up would be missed.
+      if (sweeping && !sweepRunning && now >= sweepAt - 50) {
+        if (visible && !document.hidden && now - lastNear > 1000) sweepRunning = true;
+        else nextSweep(now);
+      }
+      if (sweepRunning) {
+        const progress = (now - sweepAt) / (sweepLength * 1000);
+        const first = anchors[sweepFrom];
+        const last = anchors[sweepTo];
+        if (progress >= 1 || !first || !last) {
+          sweepRunning = false;
+          nextSweep(now);
+        } else {
+          const start = first.x - sweepRadius;
+          const end = last.x + sweepRadius;
+          sweepPos = start + (end - start) * ((1 - Math.cos(Math.PI * progress)) / 2);
+        }
+      }
+
       const idle = waving && visible && !nearAny && now - lastNear > 500;
       const goal = idle ? 1 : 0;
       waveMix += (goal - waveMix) * (1 - Math.exp(-delta / 600));
@@ -269,6 +320,9 @@ export default function VariableProximity({
         if (!letter) return;
         let target = targets[index] ?? 0;
         if (waveMix > 0) target = Math.max(target, waveMix * waveAt(index, time));
+        if (sweepPos !== null && index >= sweepFrom && index <= sweepTo && anchors[index]) {
+          target = Math.max(target, SWEEP_PEAK * strengthAt(Math.abs(anchors[index].x - sweepPos), sweepRadius, falloff));
+        }
         const current = levels[index] ?? 0;
         let next = current + (target - current) * ease;
         if (Math.abs(target - next) < 0.002) {
@@ -301,7 +355,7 @@ export default function VariableProximity({
         }
       });
 
-      if (settling || waveMix > 0 || (waving && visible && !nearAny)) {
+      if (settling || sweepRunning || waveMix > 0 || (waving && visible && !nearAny)) {
         frame = requestAnimationFrame(tick);
       } else {
         lastTime = 0;
@@ -317,6 +371,14 @@ export default function VariableProximity({
       layoutDirty = true;
       schedule();
     };
+
+    // Between sweeps nothing animates, so a timer wakes the loop instead of idling frames.
+    function nextSweep(now: number) {
+      while (sweepAt <= now) sweepAt += sweepPeriod;
+      window.clearTimeout(sweepTimer);
+      sweepTimer = window.setTimeout(schedule, sweepAt - now);
+    }
+    if (sweeping) nextSweep(performance.now());
 
     const handleMove = (x: number, y: number) => {
       pointer.x = x;
@@ -345,19 +407,20 @@ export default function VariableProximity({
     root.addEventListener('mouseleave', handleLeave);
 
     let observer: IntersectionObserver | null = null;
-    if (waving && rootRef.current && 'IntersectionObserver' in window) {
+    if ((waving || sweeping) && rootRef.current && 'IntersectionObserver' in window) {
       observer = new IntersectionObserver((entries) => {
         visible = entries.some((entry) => entry.isIntersecting);
         schedule();
       });
       observer.observe(rootRef.current);
     }
-    if (waving) document.fonts?.ready.then(relayout);
+    if (waving || sweeping) document.fonts?.ready.then(relayout);
 
     schedule();
 
     return () => {
       cancelAnimationFrame(frame);
+      window.clearTimeout(sweepTimer);
       observer?.disconnect();
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchmove', handleTouchMove);
@@ -367,7 +430,7 @@ export default function VariableProximity({
       window.removeEventListener('resize', relayout);
       root.removeEventListener('mouseleave', handleLeave);
     };
-  }, [axes, fromFontVariationSettings, containerRef, radius, falloff, smoothing, fromColor, toColor, scale, lift, idleWave, fontSize, label, lineStarts]);
+  }, [axes, fromFontVariationSettings, containerRef, radius, falloff, smoothing, fromColor, toColor, scale, lift, idleWave, sweepWord, sweepEvery, sweepLength, sweepDelay, fontSize, label, lineStarts]);
 
   const words = label.split(' ');
   const breakSet = new Set(lineStarts ? lineStarts.split(',').map(Number) : []);
