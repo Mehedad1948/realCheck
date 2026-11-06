@@ -8,31 +8,22 @@ function initialsOf(name: string) {
 }
 
 /**
- * The account avatar, in the brand's silk palette: a deep indigo disc lit from the top left, a fine
- * glossy rim, and thin Roboto Flex initials. Always a monogram, never a photo: Telegram may hand over a
- * generated bright-blue placeholder that can't be told apart from a real photo and clashes with the rest.
+ * The account avatar: a flat disc in the same quiet indigo tint and hairline ring as the row icon tiles,
+ * with thin Roboto Flex initials. Always a monogram, never a photo: Telegram may hand over a generated
+ * bright-blue placeholder that can't be told apart from a real photo and clashes with the rest.
  */
 export function UserAvatar({ name, size = 44, className }: { name: string; size?: number; className?: string }) {
   return (
     <div
       className={cn(
-        'relative isolate flex shrink-0 items-center justify-center overflow-hidden rounded-full text-white select-none',
-        'bg-[radial-gradient(circle_at_30%_20%,#818cf8_0%,#4f46e5_38%,#1e1b4b_78%,#0b0a14_100%)]',
+        'flex shrink-0 items-center justify-center rounded-full bg-primary/10 text-accent-text ring-1 ring-primary/25 select-none ring-inset',
         className,
       )}
       style={{ width: size, height: size }}
     >
-      <span
-        className="font-display font-[300] tracking-[0.02em] text-white/95"
-        style={{ fontSize: Math.round(size * 0.36), lineHeight: 1 }}
-      >
+      <span className="font-display font-[300] tracking-[0.04em]" style={{ fontSize: Math.round(size * 0.36), lineHeight: 1 }}>
         {initialsOf(name) || '?'}
       </span>
-      {/* Glossy rim: a bright hairline at the top fading out toward the bottom, like the silk's sheen. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_1px_0_rgb(255_255_255/0.35),inset_0_0_0_1px_rgb(255_255_255/0.12)]"
-      />
     </div>
   );
 }
