@@ -60,28 +60,28 @@ export default function LandingPage() {
 
       {/* pt-22 clears the fixed header. */}
       <section className="hero-parallax relative flex min-h-svh flex-col pt-22">
-        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+        <div className="hero-legible mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">
           <HeroTitle className="landing-rise text-[clamp(2.75rem,7vw,5.75rem)] leading-[1.02] tracking-[-0.03em]" />
-          <p className="landing-rise mt-7 text-base text-muted-foreground [--rise-delay:150ms] md:text-lg">
+          <p className="landing-rise mt-7 text-base text-foreground/85 [--rise-delay:150ms] md:text-lg">
             Labeled by people. Accepted only on consensus.
           </p>
           <div className="landing-rise mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 [--rise-delay:300ms]">
             <Link
               href="/register"
-              className="group inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-7 font-medium text-background transition-opacity hover:opacity-90"
+              className="group inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-7 font-medium text-background [text-shadow:none] transition-opacity hover:opacity-90"
             >
               Start a dataset
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             {telegramUrl && (
-              <a href={telegramUrl} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              <a href={telegramUrl} className="text-sm font-medium text-foreground/85 transition-colors hover:text-foreground">
                 Earn on Telegram →
               </a>
             )}
           </div>
         </div>
 
-        <div className="landing-rise mx-auto flex w-full max-w-6xl justify-center px-6 pb-10 [--rise-delay:500ms]">
+        <div className="hero-legible landing-rise mx-auto flex w-full max-w-6xl justify-center px-6 pb-10 [--rise-delay:500ms]">
           <Suspense fallback={<div className="h-13" />}>
             <PlatformStats />
           </Suspense>
@@ -163,7 +163,7 @@ async function PlatformStats() {
     <dl className="flex gap-10 text-sm">
       {items.map((item) => (
         <div key={item.label} className="flex flex-col-reverse items-center">
-          <dt className="text-muted-foreground">{item.label}</dt>
+          <dt className="text-foreground/75">{item.label}</dt>
           <dd className="text-lg font-medium tabular-nums">{item.value.toLocaleString('en-US')}</dd>
         </div>
       ))}

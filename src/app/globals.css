@@ -303,6 +303,14 @@ html[data-intro='play'] .landing-intro {
   .hero-parallax { animation: none; }
 }
 
+/* Hero copy sits on the silk, whose bright folds can pass right behind it. A soft halo in the page
+   color keeps it readable there without a visible box. */
+.hero-legible {
+  text-shadow:
+    0 1px 2px color-mix(in oklab, var(--background) 45%, transparent),
+    0 2px 18px color-mix(in oklab, var(--background) 70%, transparent);
+}
+
 /* Phones and tablets: a still frame of the silk (captured from the shader, already composited over the
    page background) replaces the live shader and the glow. Same query as STILL_QUERY in
    silk-background.tsx. The images sit inside the media query, so desktops never download them. */

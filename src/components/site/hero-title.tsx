@@ -30,8 +30,8 @@ export function HeroTitle({ className }: { className?: string }) {
           {...shared}
           {...SWEEP}
           sweepWord={2}
-          sweepDelay={2}
-          fromColor="color-mix(in oklab, var(--foreground) 50%, transparent)"
+          sweepDelay={0.7}
+          fromColor="color-mix(in oklab, var(--foreground) 74%, transparent)"
           toColor="var(--foreground)"
         />
       </span>
