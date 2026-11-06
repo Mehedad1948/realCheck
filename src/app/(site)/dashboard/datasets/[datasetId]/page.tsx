@@ -6,7 +6,7 @@ import { Suspense } from 'react';
 import { CopyButton } from '@/components/site/copy-button';
 import { StatCard } from '@/components/site/stat-card';
 import { ACTIVATION_FUNDING_TASKS } from '@/lib/constants';
-import { formatMoney } from '@/lib/money';
+import { chargePerAnswerCents, formatMoney, platformFeeCents } from '@/lib/money';
 import { botUrl, datasetStartParam } from '@/lib/telegram';
 import { cn } from '@/lib/utils';
 import { requireClientPage } from '@/server/auth/dal';
@@ -242,6 +242,7 @@ async function DatasetDetails({ params }: Props) {
                     <Coins className="h-3.5 w-3.5 text-muted-foreground" />
                     {formatMoney(dataset.rewardCents)}
                   </dd>
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">+ {formatMoney(platformFeeCents(dataset.rewardCents))} platform fee</p>
                 </div>
               </div>
             </dl>
@@ -270,7 +271,7 @@ async function DatasetDetails({ params }: Props) {
 
 function LaunchChecklist({ dataset, balanceCents }: { dataset: OwnerDataset; balanceCents: number }) {
   const { stats } = dataset;
-  const neededCents = Math.min(stats.remainingTasks, ACTIVATION_FUNDING_TASKS) * dataset.requiredVotes * dataset.rewardCents;
+  const neededCents = Math.min(stats.remainingTasks, ACTIVATION_FUNDING_TASKS) * dataset.requiredVotes * chargePerAnswerCents(dataset.rewardCents);
   const checks = [
     { label: 'Items uploaded', done: stats.remainingTasks > 0, hint: stats.remainingTasks > 0 ? `${stats.remainingTasks} waiting` : 'Upload data first' },
     {

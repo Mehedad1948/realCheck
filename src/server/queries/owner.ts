@@ -1,6 +1,7 @@
 import 'server-only';
 import { cacheLife, cacheTag } from 'next/cache';
 import { GOLD_MAX_EXPOSURES } from '@/lib/constants';
+import { chargePerAnswerCents } from '@/lib/money';
 import { tags } from '@/server/cache-tags';
 import { prisma } from '@/server/db';
 
@@ -128,9 +129,9 @@ export async function getOwnerDataset(ownerId: string, datasetId: string) {
       votesPerItem: doneTasks > 0 ? (resolvedVotes._sum.collectedVotes ?? 0) / doneTasks : null,
       /** Share of check questions evaluators got right in this dataset. */
       goldAccuracy: goldAnswers > 0 ? (gold.find((row) => row.isCorrect)?._count._all ?? 0) / goldAnswers : null,
-      // Typical cost. Items whose answers disagree can cost up to maxVotes answers.
-      estimatedCostCents: remainingTasks * dataset.requiredVotes * dataset.rewardCents,
-      maxCostCents: remainingTasks * dataset.maxVotes * dataset.rewardCents,
+      // Typical cost, fee included. Items whose answers disagree can cost up to maxVotes answers.
+      estimatedCostCents: remainingTasks * dataset.requiredVotes * chargePerAnswerCents(dataset.rewardCents),
+      maxCostCents: remainingTasks * dataset.maxVotes * chargePerAnswerCents(dataset.rewardCents),
     },
   };
 }
@@ -151,6 +152,9 @@ export type BillingHistoryItem = {
  * Billing history. Not cached: it changes with every answer the owner pays for,
  * and must always reconcile with the live balance.
  */
+/** Ledger types that make up what an owner spent on labeling: rewards, fees, and refunds (positive). */
+const SPEND_TYPES = ['TASK_CHARGE' as const, 'PLATFORM_FEE' as const, 'REWARD_REFUND' as const];
+
 export async function getOwnerBilling(ownerId: string) {
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const [credits, dailyCharges, byType, lastWeek, perDataset] = await Promise.all([
@@ -160,29 +164,39 @@ export async function getOwnerBilling(ownerId: string) {
       take: 50,
       select: { id: true, type: true, amountCents: true, note: true, createdAt: true },
     }),
-    // One row per dataset per day instead of one per answer.
+    // One row per dataset per day instead of one per answer. Net of fees and refunds.
     prisma.$queryRaw<{ day: Date; datasetId: string | null; amount: number; answers: number }[]>`
-      SELECT date_trunc('day', "createdAt") AS day, "datasetId", SUM("amountCents")::int AS amount, COUNT(*)::int AS answers
+      SELECT date_trunc('day', "createdAt") AS day, "datasetId", SUM("amountCents")::int AS amount,
+        (COUNT(*) FILTER (WHERE type = 'TASK_CHARGE'))::int AS answers
       FROM "LedgerEntry"
-      WHERE "userId" = ${ownerId} AND type = 'TASK_CHARGE'
+      WHERE "userId" = ${ownerId} AND type IN ('TASK_CHARGE', 'PLATFORM_FEE', 'REWARD_REFUND')
       GROUP BY 1, 2
       ORDER BY 1 DESC
       LIMIT 60`,
     prisma.ledgerEntry.groupBy({ by: ['type'], where: { userId: ownerId }, _sum: { amountCents: true } }),
     prisma.ledgerEntry.aggregate({
-      where: { userId: ownerId, type: 'TASK_CHARGE', createdAt: { gte: weekAgo } },
+      where: { userId: ownerId, type: { in: SPEND_TYPES }, createdAt: { gte: weekAgo } },
       _sum: { amountCents: true },
     }),
     prisma.ledgerEntry.groupBy({
-      by: ['datasetId'],
-      where: { userId: ownerId, type: 'TASK_CHARGE', datasetId: { not: null } },
+      by: ['datasetId', 'type'],
+      where: { userId: ownerId, type: { in: SPEND_TYPES }, datasetId: { not: null } },
       _sum: { amountCents: true },
       _count: { _all: true },
     }),
   ]);
 
+  // Rows come per dataset and ledger type; fold them into one spend figure per dataset.
+  const spendPerDataset = new Map<string, { amount: number; answers: number }>();
+  for (const row of perDataset) {
+    const entry = spendPerDataset.get(row.datasetId!) ?? { amount: 0, answers: 0 };
+    entry.amount += row._sum.amountCents ?? 0;
+    if (row.type === 'TASK_CHARGE') entry.answers += row._count._all;
+    spendPerDataset.set(row.datasetId!, entry);
+  }
+
   const datasetIds = [
-    ...new Set([...dailyCharges.map((row) => row.datasetId), ...perDataset.map((row) => row.datasetId)].filter((id): id is string => Boolean(id))),
+    ...new Set([...dailyCharges.map((row) => row.datasetId), ...spendPerDataset.keys()].filter((id): id is string => Boolean(id))),
   ];
   const datasets = await prisma.dataset.findMany({ where: { id: { in: datasetIds } }, select: { id: true, title: true } });
   const titles = new Map(datasets.map((d) => [d.id, d.title]));
@@ -214,15 +228,15 @@ export async function getOwnerBilling(ownerId: string) {
     history,
     totals: {
       fundedCents: sum('TOP_UP') + Math.max(0, sum('ADJUSTMENT')),
-      spentCents: -sum('TASK_CHARGE'),
+      spentCents: -(sum('TASK_CHARGE') + sum('PLATFORM_FEE') + sum('REWARD_REFUND')),
       spentLastWeekCents: -(lastWeek._sum.amountCents ?? 0),
     },
-    spendByDataset: perDataset
-      .map((row) => ({
-        datasetId: row.datasetId!,
-        title: titles.get(row.datasetId!) ?? 'Deleted dataset',
-        spentCents: -(row._sum.amountCents ?? 0),
-        answers: row._count._all,
+    spendByDataset: [...spendPerDataset]
+      .map(([datasetId, row]) => ({
+        datasetId,
+        title: titles.get(datasetId) ?? 'Deleted dataset',
+        spentCents: -row.amount,
+        answers: row.answers,
       }))
       .sort((a, b) => b.spentCents - a.spentCents)
       .slice(0, 6),

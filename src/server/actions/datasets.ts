@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { ACTIVATION_FUNDING_TASKS, MAX_REQUIRED_VOTES } from '@/lib/constants';
-import { formatMoney } from '@/lib/money';
+import { chargePerAnswerCents, formatMoney } from '@/lib/money';
 import {
   createDatasetSchema,
   datasetStatusSchema,
@@ -97,7 +97,7 @@ export const setDatasetStatusAction = clientAction(
 
       // The owner must be able to fund the next batch of tasks up front.
       const tasksToFund = Math.min(remaining, ACTIVATION_FUNDING_TASKS);
-      const requiredCents = tasksToFund * dataset.requiredVotes * dataset.rewardCents;
+      const requiredCents = tasksToFund * dataset.requiredVotes * chargePerAnswerCents(dataset.rewardCents);
       if (viewer.balanceCents < requiredCents) {
         throw errors.conflict(
           'INSUFFICIENT_FUNDS',

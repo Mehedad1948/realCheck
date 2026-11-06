@@ -70,3 +70,19 @@ export const voteSchema = z.object({ selection: option });
 export const topUpSchema = z.object({
   amountCents: z.number().int().min(100).max(MAX_TOP_UP_CENTS),
 });
+
+export const linkWalletSchema = z.object({
+  address: z.string().regex(/^-?\d+:[0-9a-fA-F]{64}$/),
+  network: z.string().max(10),
+  walletStateInit: z.string().min(1).max(10_000),
+  proof: z.object({
+    timestamp: z.number().int().positive(),
+    domain: z.object({ lengthBytes: z.number().int().nonnegative(), value: z.string().max(253) }),
+    payload: z.string().max(128),
+    signature: z.string().max(200),
+  }),
+});
+
+export const withdrawalSchema = z.object({
+  amountCents: z.number().int().positive().max(10_000_000),
+});

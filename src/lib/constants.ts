@@ -37,6 +37,17 @@ export const CONSENSUS_CONFIDENCE = 0.85;
 /** Answers faster than this are flagged as likely not read. */
 export const MIN_RESPONSE_MS = 1500;
 
+// Money. All amounts are integer cents.
+/** Platform fee charged to the dataset owner on top of each paid reward, in basis points (2000 = 20%). */
+export const PLATFORM_FEE_BPS = 2000;
+/** Rewards stay pending this long before they can be withdrawn, so cheating found later can be undone. */
+export const REWARD_HOLD_DAYS = 7;
+export const TRUSTED_REWARD_HOLD_DAYS = 2;
+/** Smallest payout, well above the TON network fee the platform pays per transfer. */
+export const MIN_WITHDRAWAL_CENTS = 200;
+/** Payouts are sent in USDT on TON, 1 USDT = 1 USD. */
+export const PAYOUT_ASSET = 'USDT';
+
 /** To activate a dataset the owner must be able to fund at least this many tasks. */
 export const ACTIVATION_FUNDING_TASKS = 50;
 

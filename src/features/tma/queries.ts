@@ -90,7 +90,9 @@ export function useSubmitVote() {
       api<VoteResult>(`/api/tma/tasks/${taskId}/vote`, { method: 'POST', json: { selection } }),
     onSuccess: (result) => {
       queryClient.setQueryData<EvaluatorProfile>(queryKeys.tma.me(), (me) =>
-        me ? { ...me, balanceCents: result.balanceCents, tasksDone: me.tasksDone + 1 } : me,
+        me
+          ? { ...me, balanceCents: result.balanceCents, pendingCents: result.pendingCents, tasksDone: me.tasksDone + 1 }
+          : me,
       );
       // Refetched the next time the screens that show them are opened.
       for (const queryKey of [queryKeys.tma.earnings(), queryKeys.tma.openTaskCounts(), queryKeys.tma.history.all()]) {

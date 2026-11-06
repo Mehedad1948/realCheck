@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MAX_OPTIONS, MAX_REQUIRED_VOTES } from '@/lib/constants';
-import { dollarsToCents, formatMoney } from '@/lib/money';
+import { chargePerAnswerCents, dollarsToCents, formatMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { createDatasetAction } from '@/server/actions/datasets';
 
@@ -30,7 +30,7 @@ export default function CreateDatasetPage() {
 
   const rewardCents = dollarsToCents(Number(reward) || 0);
   const cleanOptions = options.map((o) => o.trim()).filter(Boolean);
-  const perItemCents = rewardCents * requiredVotes;
+  const perItemCents = chargePerAnswerCents(rewardCents) * requiredVotes;
 
   const setOption = (index: number, value: string) => setOptions((prev) => prev.map((o, i) => (i === index ? value : o)));
 
@@ -194,7 +194,7 @@ export default function CreateDatasetPage() {
 
           <div className="mt-5 rounded-xl border border-border bg-card p-4 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Cost per item</span>
+              <span className="text-muted-foreground">Cost per item, fee included</span>
               <span className="font-medium tabular-nums">{formatMoney(perItemCents)}</span>
             </div>
             <div className="mt-1.5 flex justify-between">

@@ -83,7 +83,10 @@ model User {
   goldAnswered    Int      @default(0)
   lastGoldCorrect Boolean?
   // Money is stored as integer cents to avoid float rounding.
+  // Spendable or withdrawable money: the sum of the user's AVAILABLE ledger entries.
   balanceCents    Int      @default(0)
+  // Evaluator rewards still in their hold period: the sum of PENDING ledger entries.
+  pendingCents    Int      @default(0)
 
   role Role @default(EVALUATOR)
 
@@ -97,6 +100,8 @@ model User {
   assignments   TaskAssignment[]
   datasets      Dataset[]
   ledgerEntries LedgerEntry[]
+  tonWallet     TonWallet?
+  withdrawals   Withdrawal[]
 }
 
 // ==========================================
@@ -226,30 +231,96 @@ model Vote {
 // ==========================================
 // LEDGER
 // ==========================================
-// Append-only record of every balance change. A user's balanceCents should
-// always equal the sum of their ledger amounts.
+// Append-only record of every balance change. Each entry lands in one bucket, and a
+// user's balanceCents / pendingCents always equal the sums of their AVAILABLE / PENDING
+// entries. Writes go through server/ledger.
 
 enum LedgerType {
   TOP_UP
-  TASK_CHARGE // debit from the dataset owner
-  TASK_REWARD // credit to the evaluator
+  TASK_CHARGE // debit from the dataset owner: the evaluator's reward
+  PLATFORM_FEE // debit from the dataset owner: the platform's fee on top of the reward
+  TASK_REWARD // credit to the evaluator, PENDING until availableAt
+  REWARD_RELEASE // moves matured rewards from PENDING to AVAILABLE (one entry per bucket)
+  CLAWBACK // removes a suspended evaluator's unreleased rewards
+  REWARD_REFUND // returns clawed-back rewards to the dataset owner
+  WITHDRAWAL // debit for a payout request
+  WITHDRAWAL_REVERSAL // credit back when a payout is rejected or fails
   ADJUSTMENT
 }
 
+enum LedgerBucket {
+  AVAILABLE
+  PENDING
+}
+
 model LedgerEntry {
-  id          String     @id @default(cuid())
-  userId      String
-  type        LedgerType
+  id           String       @id @default(cuid())
+  userId       String
+  type         LedgerType
+  bucket       LedgerBucket @default(AVAILABLE)
   // Signed: positive credits the user, negative debits them.
-  amountCents Int
-  datasetId   String?
-  voteId      String?
-  note        String?
-  createdAt   DateTime   @default(now())
+  amountCents  Int
+  datasetId    String?
+  voteId       String?
+  withdrawalId String?
+  note         String?
+  // TASK_REWARD only: when the reward may be released, and when it was released or clawed back.
+  availableAt  DateTime?
+  settledAt    DateTime?
+  createdAt    DateTime     @default(now())
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   dataset Dataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
+  @@index([userId, bucket, settledAt])
   @@index([datasetId])
+}
+
+// ==========================================
+// PAYOUTS
+// ==========================================
+
+// The TON wallet an evaluator is paid to, proven theirs with TON Connect's ton_proof.
+// An address can belong to one account only, which also stops one person from
+// cashing out several accounts to the same wallet.
+model TonWallet {
+  userId    String   @id
+  // Raw form, "<workchain>:<hex>".
+  address   String   @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum WithdrawalStatus {
+  REQUESTED // funds held, waiting for review
+  APPROVED // reviewed, waiting for the payout script
+  SENDING // handed to the network; never resent automatically
+  SENT // the hot wallet's transaction is on chain
+  REJECTED // refused in review; funds returned
+  FAILED // sending failed; funds returned
+}
+
+model Withdrawal {
+  id          String           @id @default(cuid())
+  userId      String
+  amountCents Int
+  // Raw destination address, copied from the linked wallet at request time.
+  address     String
+  asset       String           @default("USDT")
+  status      WithdrawalStatus @default(REQUESTED)
+  // Ties the on-chain jetton transfer back to this row.
+  queryId     BigInt           @unique @default(autoincrement())
+  txHash      String?
+  note        String?
+  createdAt   DateTime         @default(now())
+  reviewedAt  DateTime?
+  sentAt      DateTime?
+  updatedAt   DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
 }

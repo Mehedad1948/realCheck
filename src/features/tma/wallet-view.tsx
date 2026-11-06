@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, Award, CheckCircle2, Clock, Coins, Target } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Award, CheckCircle2, Clock, Coins, Target, Undo2 } from 'lucide-react';
 import { formatMoney } from '@/lib/money';
 import { MIN_REPUTATION } from '@/lib/constants';
 import type { EarningsEntry } from '@/lib/api/types';
@@ -29,6 +29,9 @@ export function WalletView() {
           </p>
         ) : (
           <div className="mx-auto mt-3 h-16 w-48 animate-pulse rounded-2xl bg-card" />
+        )}
+        {profile && profile.pendingCents > 0 && (
+          <p className="mt-3 text-[13px] text-muted-foreground tabular-nums">+ {formatMoney(profile.pendingCents)} pending</p>
         )}
       </div>
 
@@ -121,19 +124,28 @@ function PeriodTile({ label, cents }: { label: string; cents?: number }) {
 const dayFormat = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 const timeFormat = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
 
+const ACTIVITY: Record<EarningsEntry['type'], { title: string | null; Icon: typeof Coins }> = {
+  TASK_REWARD: { title: null, Icon: Coins },
+  CLAWBACK: { title: 'Rewards removed after review', Icon: Undo2 },
+  WITHDRAWAL: { title: 'Withdrawal', Icon: ArrowUpRight },
+  WITHDRAWAL_REVERSAL: { title: 'Withdrawal returned', Icon: ArrowDownLeft },
+  ADJUSTMENT: { title: 'Adjustment', Icon: Coins },
+};
+
 function ActivityList({ entries }: { entries: EarningsEntry[] }) {
   return entries.map((entry) => {
     const date = new Date(entry.createdAt);
     const positive = entry.amountCents >= 0;
+    const { title, Icon } = ACTIVITY[entry.type];
     return (
       <Row
         key={entry.id}
         icon={
           <IconTile className={positive ? undefined : 'bg-muted text-muted-foreground ring-border'}>
-            <Coins />
+            <Icon />
           </IconTile>
         }
-        title={entry.datasetTitle ?? 'Adjustment'}
+        title={title ?? entry.datasetTitle ?? 'Answer'}
         subtitle={`${dayFormat.format(date)} · ${timeFormat.format(date)}`}
         trailing={
           <span className={positive ? 'font-medium text-emerald-600 tabular-nums dark:text-emerald-300' : 'tabular-nums'}>

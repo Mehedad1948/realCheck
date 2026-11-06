@@ -11,16 +11,28 @@ import type { Evaluator } from '@/server/auth/tma';
 import { expireDataset } from '@/server/cache-invalidation';
 import { prisma } from '@/server/db';
 import { errors, isUniqueViolation } from '@/server/errors';
+import { clawbackPendingRewards } from '@/server/ledger';
+import { chargePerAnswerCents, platformFeeCents } from '@/lib/money';
 import { resolveTask } from './consensus';
-import { computeTrust, goldRate, isSuspended, sampleGoldCount, toReputation } from './trust';
+import { settleRewards } from './payouts';
+import { computeTrust, goldRate, isSuspended, rewardHoldDays, sampleGoldCount, toReputation } from './trust';
 
 // The evaluator side of the marketplace: serving tasks and accepting votes.
 
 export async function getEvaluatorProfile(evaluator: Evaluator): Promise<EvaluatorProfile> {
+  await settleRewards(evaluator);
   const [user, tasksDone, gold] = await Promise.all([
     prisma.user.findUniqueOrThrow({
       where: { id: evaluator.id },
-      select: { id: true, firstName: true, username: true, photoUrl: true, balanceCents: true, reputation: true },
+      select: {
+        id: true,
+        firstName: true,
+        username: true,
+        photoUrl: true,
+        balanceCents: true,
+        pendingCents: true,
+        reputation: true,
+      },
     }),
     prisma.vote.count({ where: { userId: evaluator.id } }),
     prisma.vote.groupBy({
@@ -43,21 +55,25 @@ export async function getEvaluatorProfile(evaluator: Evaluator): Promise<Evaluat
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Ledger entries an evaluator sees in their activity list. Releases are bookkeeping, not events. */
+const ACTIVITY_TYPES = ['TASK_REWARD', 'CLAWBACK', 'WITHDRAWAL', 'WITHDRAWAL_REVERSAL', 'ADJUSTMENT'] as const;
+
 export async function getEvaluatorEarnings(evaluator: Evaluator): Promise<Earnings> {
   const now = Date.now();
   const startOfToday = new Date(now - (now % DAY_MS));
   const weekAgo = new Date(now - 7 * DAY_MS);
-  const rewards = { userId: evaluator.id, type: 'TASK_REWARD' as const };
+  // Earned is what was rewarded minus anything clawed back.
+  const earned = { userId: evaluator.id, type: { in: ['TASK_REWARD' as const, 'CLAWBACK' as const] } };
 
   const [today, week, total, recent] = await Promise.all([
-    prisma.ledgerEntry.aggregate({ where: { ...rewards, createdAt: { gte: startOfToday } }, _sum: { amountCents: true } }),
-    prisma.ledgerEntry.aggregate({ where: { ...rewards, createdAt: { gte: weekAgo } }, _sum: { amountCents: true } }),
-    prisma.ledgerEntry.aggregate({ where: rewards, _sum: { amountCents: true } }),
+    prisma.ledgerEntry.aggregate({ where: { ...earned, createdAt: { gte: startOfToday } }, _sum: { amountCents: true } }),
+    prisma.ledgerEntry.aggregate({ where: { ...earned, createdAt: { gte: weekAgo } }, _sum: { amountCents: true } }),
+    prisma.ledgerEntry.aggregate({ where: earned, _sum: { amountCents: true } }),
     prisma.ledgerEntry.findMany({
-      where: { userId: evaluator.id },
+      where: { userId: evaluator.id, type: { in: [...ACTIVITY_TYPES] } },
       orderBy: { createdAt: 'desc' },
       take: 30,
-      select: { id: true, amountCents: true, createdAt: true, dataset: { select: { title: true } } },
+      select: { id: true, type: true, amountCents: true, createdAt: true, dataset: { select: { title: true } } },
     }),
   ]);
 
@@ -67,6 +83,7 @@ export async function getEvaluatorEarnings(evaluator: Evaluator): Promise<Earnin
     totalCents: total._sum.amountCents ?? 0,
     recent: recent.map((entry) => ({
       id: entry.id,
+      type: entry.type as (typeof ACTIVITY_TYPES)[number],
       amountCents: entry.amountCents,
       datasetTitle: entry.dataset?.title ?? null,
       createdAt: entry.createdAt.toISOString(),
@@ -136,7 +153,7 @@ export async function getTaskBatch(evaluator: Evaluator, datasetId: string): Pro
   if (dataset.status !== 'ACTIVE') throw datasetUnavailable();
 
   // Don't hand out more work than the owner can currently pay for.
-  const affordable = Math.floor(dataset.owner.balanceCents / dataset.rewardCents);
+  const affordable = Math.floor(dataset.owner.balanceCents / chargePerAnswerCents(dataset.rewardCents));
   if (affordable < 1) return { datasetId, tasks: [] };
 
   // A new batch replaces the previous one, so release its unanswered slots first.
@@ -240,6 +257,7 @@ export async function submitVote(evaluator: Evaluator, taskId: string, selection
 
       const isCorrect = current.isValidation ? selection === current.correctAnswer : null;
       const rewardCents = isCorrect === false ? 0 : dataset.rewardCents;
+      const feeCents = rewardCents > 0 ? platformFeeCents(rewardCents) : 0;
 
       // Unique on (userId, taskId): a second answer fails with P2002.
       const vote = await tx.vote.create({
@@ -249,22 +267,37 @@ export async function submitVote(evaluator: Evaluator, taskId: string, selection
       await tx.taskAssignment.deleteMany({ where: { taskId, userId: evaluator.id } });
 
       if (rewardCents > 0) {
-        // Debit the owner only if they can afford it. Never goes negative.
+        // Debit the owner the reward plus the platform fee, only if they can afford it. Never goes negative.
+        const chargeCents = rewardCents + feeCents;
         const charged = await tx.user.updateMany({
-          where: { id: scope.ownerId, balanceCents: { gte: rewardCents } },
-          data: { balanceCents: { decrement: rewardCents } },
+          where: { id: scope.ownerId, balanceCents: { gte: chargeCents } },
+          data: { balanceCents: { decrement: chargeCents } },
         });
         if (charged.count === 0) throw new OwnerOutOfFunds();
 
+        // The reward is held as pending, so it can be clawed back if this evaluator turns out to be cheating.
+        const now = new Date();
+        const availableAt = new Date(now.getTime() + rewardHoldDays(evaluator) * 24 * 60 * 60 * 1000);
+        const charge = { userId: scope.ownerId, datasetId: scope.datasetId, voteId: vote.id };
         await tx.ledgerEntry.createMany({
           data: [
-            { userId: scope.ownerId, type: 'TASK_CHARGE', amountCents: -rewardCents, datasetId: scope.datasetId, voteId: vote.id },
-            { userId: evaluator.id, type: 'TASK_REWARD', amountCents: rewardCents, datasetId: scope.datasetId, voteId: vote.id },
+            { ...charge, type: 'TASK_CHARGE', amountCents: -rewardCents },
+            ...(feeCents > 0 ? [{ ...charge, type: 'PLATFORM_FEE' as const, amountCents: -feeCents }] : []),
+            {
+              userId: evaluator.id,
+              type: 'TASK_REWARD',
+              bucket: 'PENDING',
+              amountCents: rewardCents,
+              availableAt,
+              datasetId: scope.datasetId,
+              voteId: vote.id,
+            },
           ],
         });
       }
 
       let standing = {};
+      let suspendedNow = false;
       if (isCorrect !== null) {
         const recent = await tx.vote.findMany({
           where: { userId: evaluator.id, isCorrect: { not: null } },
@@ -279,19 +312,28 @@ export async function submitVote(evaluator: Evaluator, taskId: string, selection
           goldAnswered: { increment: 1 },
           lastGoldCorrect: isCorrect,
         };
+        suspendedNow = isSuspended({ trust, goldAnswered: evaluator.goldAnswered + 1, lastGoldCorrect: isCorrect });
       }
 
-      const worker = await tx.user.update({
+      await tx.user.update({
         where: { id: evaluator.id },
-        data: { balanceCents: { increment: rewardCents }, lastSeenAt: new Date(), ...standing },
-        select: { balanceCents: true },
+        data: { pendingCents: { increment: rewardCents }, lastSeenAt: new Date(), ...standing },
+      });
+      // Falling below the trust bar takes back everything not yet released and refunds the owners.
+      if (suspendedNow) await clawbackPendingRewards(tx, evaluator.id);
+      const worker = await tx.user.findUniqueOrThrow({
+        where: { id: evaluator.id },
+        select: { balanceCents: true, pendingCents: true },
       });
 
       const datasetChanged = current.isValidation
         ? false
         : await resolveIfFull(tx, taskId, scope.datasetId, dataset, current.targetVotes);
 
-      return { result: { taskId, rewardCents, balanceCents: worker.balanceCents }, datasetChanged };
+      return {
+        result: { taskId, rewardCents, balanceCents: worker.balanceCents, pendingCents: worker.pendingCents },
+        datasetChanged,
+      };
     });
 
     // Progress shown to the owner and the public list only change when a task resolves,

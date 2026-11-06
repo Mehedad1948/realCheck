@@ -5,6 +5,8 @@ import {
   GOLD_RATE_TRUSTED,
   MIN_TRUST,
   PROBATION_GOLD,
+  REWARD_HOLD_DAYS,
+  TRUSTED_REWARD_HOLD_DAYS,
   TRUST_MIN_GOLD,
   TRUST_PRIOR_CORRECT,
   TRUST_PRIOR_WRONG,
@@ -31,11 +33,20 @@ export function isSuspended({ trust, goldAnswered }: Standing) {
   return goldAnswered >= TRUST_MIN_GOLD && trust < MIN_TRUST;
 }
 
+function isTrusted({ trust, goldAnswered }: Standing) {
+  return trust >= TRUSTED_TRUST && goldAnswered >= TRUSTED_MIN_GOLD;
+}
+
+/** Days a new reward stays pending. Proven evaluators wait less. */
+export function rewardHoldDays(standing: Standing) {
+  return isTrusted(standing) ? TRUSTED_REWARD_HOLD_DAYS : REWARD_HOLD_DAYS;
+}
+
 /** Share of a batch that should be golden tasks for this evaluator. */
-export function goldRate({ trust, goldAnswered, lastGoldCorrect }: Standing) {
-  if (goldAnswered < PROBATION_GOLD) return GOLD_RATE_PROBATION;
-  if (lastGoldCorrect === false) return GOLD_RATE_AFTER_MISS;
-  if (trust >= TRUSTED_TRUST && goldAnswered >= TRUSTED_MIN_GOLD) return GOLD_RATE_TRUSTED;
+export function goldRate(standing: Standing) {
+  if (standing.goldAnswered < PROBATION_GOLD) return GOLD_RATE_PROBATION;
+  if (standing.lastGoldCorrect === false) return GOLD_RATE_AFTER_MISS;
+  if (isTrusted(standing)) return GOLD_RATE_TRUSTED;
   return GOLD_RATE_NORMAL;
 }
 

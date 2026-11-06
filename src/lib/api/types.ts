@@ -33,7 +33,10 @@ export type EvaluatorProfile = {
   firstName: string | null;
   username: string | null;
   photoUrl: string | null;
+  /** Withdrawable now. */
   balanceCents: number;
+  /** Earned but still in the hold period. */
+  pendingCents: number;
   reputation: number;
   tasksDone: number;
   /** Share of golden tasks answered correctly, 0..1, or null before any were seen. */
@@ -57,10 +60,12 @@ export type VoteResult = {
   taskId: string;
   rewardCents: number;
   balanceCents: number;
+  pendingCents: number;
 };
 
 export type EarningsEntry = {
   id: string;
+  type: 'TASK_REWARD' | 'CLAWBACK' | 'WITHDRAWAL' | 'WITHDRAWAL_REVERSAL' | 'ADJUSTMENT';
   amountCents: number;
   datasetTitle: string | null;
   createdAt: string;
@@ -107,4 +112,35 @@ export type Earnings = {
   weekCents: number;
   totalCents: number;
   recent: EarningsEntry[];
+};
+
+export type WithdrawalStatus = 'REQUESTED' | 'APPROVED' | 'SENDING' | 'SENT' | 'REJECTED' | 'FAILED';
+
+export type WithdrawalSummary = {
+  id: string;
+  amountCents: number;
+  status: WithdrawalStatus;
+  /** User-friendly destination address. */
+  address: string;
+  txHash: string | null;
+  createdAt: string;
+};
+
+export type PayoutWallet = {
+  /** User-friendly, non-bounceable address. */
+  address: string;
+  linkedAt: string;
+};
+
+export type Payouts = {
+  balanceCents: number;
+  pendingCents: number;
+  /** When the next pending reward becomes available, or null if none are pending. */
+  nextReleaseAt: string | null;
+  minWithdrawalCents: number;
+  asset: string;
+  network: 'mainnet' | 'testnet';
+  canWithdraw: boolean;
+  wallet: PayoutWallet | null;
+  withdrawals: WithdrawalSummary[];
 };

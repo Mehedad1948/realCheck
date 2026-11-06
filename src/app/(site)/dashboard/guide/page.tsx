@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { PageHeader } from '@/components/site/page-header';
-import { ACTIVATION_FUNDING_TASKS, MIN_REPUTATION, UPLOAD_CHUNK_SIZE } from '@/lib/constants';
+import { ACTIVATION_FUNDING_TASKS, MIN_REPUTATION, PLATFORM_FEE_BPS, UPLOAD_CHUNK_SIZE } from '@/lib/constants';
 
 export const metadata: Metadata = { title: 'Guide' };
 
@@ -95,8 +95,9 @@ export default function GuidePage() {
             <div className="flex gap-3 rounded-xl border border-border bg-card p-4">
               <Coins className="h-5 w-5 shrink-0 text-primary" />
               <p className="text-sm">
-                <strong>Cost per item = reward per answer × answers per item.</strong> At $0.05 and 3 answers, an item costs $0.15 and 1,000 items cost
-                $150.
+                <strong>Cost per item = (reward per answer + {PLATFORM_FEE_BPS / 100}% platform fee) × answers per item.</strong> At $0.05 and 3
+                answers, an item costs $0.18 and 1,000 items cost $180. Evaluators receive the full reward. If an evaluator is later caught answering
+                carelessly, what you paid them for answers not yet released to them is refunded to your balance.
               </p>
             </div>
             <p>
