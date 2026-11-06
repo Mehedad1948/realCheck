@@ -17,8 +17,8 @@ export function OpenDatasetList({ initialData }: { initialData: OpenDataset[] })
     return (
       <Section title="Available tasks">
         <div className="flex flex-col items-center px-6 py-10 text-center">
-          <Inbox className="h-10 w-10 text-muted-foreground/60" strokeWidth={1.5} />
-          <p className="mt-3 font-semibold">No tasks right now</p>
+          <Inbox className="h-9 w-9 text-muted-foreground/60" strokeWidth={1.25} />
+          <p className="mt-3 text-[17px] font-[450]">No tasks right now</p>
           <p className="mt-1 text-sm text-muted-foreground">New datasets arrive regularly. Check back soon.</p>
         </div>
       </Section>
@@ -38,14 +38,12 @@ export function OpenDatasetList({ initialData }: { initialData: OpenDataset[] })
           key={dataset.id}
           href={`/app/tasks/${dataset.id}`}
           icon={
-            <IconTile className={dataset.dataType === 'IMAGE' ? 'bg-violet-500' : 'bg-sky-500'}>
-              {dataset.dataType === 'IMAGE' ? <ImageIcon /> : <FileText />}
-            </IconTile>
+            <IconTile>{dataset.dataType === 'IMAGE' ? <ImageIcon /> : <FileText />}</IconTile>
           }
           title={dataset.title}
           subtitle={`${dataset.openTasks.toLocaleString('en-US')} tasks${dataset.description ? ` · ${dataset.description}` : ''}`}
           trailing={
-            <span className="rounded-full bg-emerald-500/12 px-2 py-0.5 text-[13px] font-semibold text-emerald-600 tabular-nums dark:text-emerald-400">
+            <span className="rounded-full px-2.5 py-1 text-[13px] font-medium text-emerald-600 tabular-nums ring-1 ring-emerald-500/25 ring-inset dark:text-emerald-300">
               +{formatMoney(dataset.rewardCents)}
             </span>
           }

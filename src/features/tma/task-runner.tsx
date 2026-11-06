@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { OpenInTelegram } from './open-in-telegram';
 import { useSubmitVote, useTaskBatch } from './queries';
 import { haptics, useBackButton, useMainButton, useTelegram } from './telegram-provider';
+import { Money } from './ui';
 import { useSwipe } from './use-swipe';
 
 export function TaskRunner({ dataset }: { dataset: PublicDataset }) {
@@ -65,7 +66,7 @@ export function TaskRunner({ dataset }: { dataset: PublicDataset }) {
         <Link
           href="/app"
           aria-label="Close"
-          className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground"
+          className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground ring-1 ring-border ring-inset"
         >
           <X className="h-4 w-4" />
         </Link>
@@ -206,8 +207,8 @@ function BatchSession({
       <ProgressHeader tasks={tasks} answers={answers} index={index} earnedCents={earnedCents} onJump={goTo} />
 
       <div className="mt-5">
-        <p className="text-[13px] font-medium text-muted-foreground">{dataset.title}</p>
-        <h1 className="mt-1 text-[21px] leading-snug font-semibold tracking-tight">{dataset.question}</h1>
+        <p className="text-[13px] text-muted-foreground">{dataset.title}</p>
+        <h1 className="mt-1.5 text-[26px] leading-[1.15] font-[320] tracking-[-0.025em]">{dataset.question}</h1>
         {dataset.description && <Instructions text={dataset.description} />}
       </div>
 
@@ -232,15 +233,17 @@ function BatchSession({
                   disabled={Boolean(answer)}
                   aria-pressed={selected}
                   className={cn(
-                    'flex min-h-[54px] w-full items-center gap-3 rounded-2xl px-4 text-left text-[16px] font-medium transition-all duration-200',
-                    selected ? 'animate-pop bg-primary text-primary-foreground' : 'bg-card active:scale-[0.98] active:bg-accent',
+                    'flex min-h-[56px] w-full items-center gap-3 rounded-full pr-5 pl-2.5 text-left text-[16px] transition-all duration-200',
+                    selected
+                      ? 'animate-pop bg-foreground font-medium text-background'
+                      : 'bg-card ring-1 ring-border ring-inset active:scale-[0.98] active:bg-accent',
                     answer && !selected && 'opacity-45',
                   )}
                 >
                   <span
                     className={cn(
-                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold tabular-nums',
-                      selected ? 'bg-white/20' : 'bg-muted text-muted-foreground',
+                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] tabular-nums',
+                      selected ? 'bg-background/15' : 'text-muted-foreground ring-1 ring-border ring-inset',
                     )}
                   >
                     {selected && answer.state === 'saving' ? (
@@ -309,7 +312,7 @@ function ProgressHeader({
         </span>
         <span
           key={earnedCents}
-          className="animate-in rounded-full bg-emerald-500/12 px-2.5 py-0.5 font-semibold text-emerald-600 tabular-nums duration-300 zoom-in-90 dark:text-emerald-400"
+          className="animate-in rounded-full px-2.5 py-0.5 font-medium text-emerald-600 tabular-nums ring-1 ring-emerald-500/25 duration-300 ring-inset zoom-in-90 dark:text-emerald-300"
         >
           +{formatMoney(earnedCents)}
         </span>
@@ -323,7 +326,7 @@ function ProgressHeader({
             onClick={() => onJump(i)}
             className={cn(
               'h-1 flex-1 rounded-full transition-colors duration-300',
-              answers[t.id] ? 'bg-primary' : i === index ? 'bg-primary/40' : 'bg-foreground/10',
+              answers[t.id] ? 'bg-primary' : i === index ? 'bg-foreground/40' : 'bg-foreground/10',
             )}
           />
         ))}
@@ -360,7 +363,7 @@ function TaskContent({ task, next }: { task: TaskCard; next?: TaskCard }) {
             key={url}
             type="button"
             onClick={() => setZoomed(url)}
-            className="relative block aspect-[4/3] w-full overflow-hidden rounded-2xl bg-card"
+            className="relative block aspect-[4/3] w-full overflow-hidden rounded-[22px] bg-card ring-1 ring-border ring-inset"
             aria-label="View full size"
           >
             {!loaded[url] && <div className="absolute inset-0 animate-pulse bg-muted" />}
@@ -399,7 +402,7 @@ function TaskContent({ task, next }: { task: TaskCard; next?: TaskCard }) {
   }
 
   return (
-    <blockquote className="rounded-2xl bg-card px-5 py-5 text-[17px] leading-relaxed whitespace-pre-wrap">
+    <blockquote className="rounded-[22px] bg-card px-5 py-5 text-[17px] leading-relaxed whitespace-pre-wrap ring-1 ring-border ring-inset">
       {task.content}
     </blockquote>
   );
@@ -410,9 +413,9 @@ function RunnerSkeleton() {
     <div className="space-y-4 pt-1">
       <div className="h-4 w-full animate-pulse rounded bg-card" />
       <div className="h-7 w-3/4 animate-pulse rounded-lg bg-card" />
-      <div className="h-40 animate-pulse rounded-2xl bg-card" />
+      <div className="h-40 animate-pulse rounded-[22px] bg-card" />
       {Array.from({ length: 3 }, (_, i) => (
-        <div key={i} className="h-[54px] animate-pulse rounded-2xl bg-card" />
+        <div key={i} className="h-[56px] animate-pulse rounded-full bg-card" />
       ))}
     </div>
   );
@@ -456,28 +459,30 @@ function EndState({
     <div className="flex flex-1 animate-in flex-col items-center justify-center pb-10 text-center duration-500 fade-in slide-in-from-bottom-4">
       <div
         className={cn(
-          'flex h-20 w-20 animate-in items-center justify-center rounded-full duration-500 zoom-in-50',
-          tone === 'success' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-card text-muted-foreground',
+          'flex h-20 w-20 animate-in items-center justify-center rounded-full ring-1 duration-500 ring-inset zoom-in-50',
+          tone === 'success'
+            ? 'bg-emerald-500/10 text-emerald-600 shadow-[0_0_60px_-10px] shadow-emerald-500/40 ring-emerald-500/30 dark:text-emerald-300'
+            : 'bg-card text-muted-foreground ring-border',
         )}
       >
-        {tone === 'success' ? <Check className="h-10 w-10" strokeWidth={3} /> : <Info className="h-9 w-9" />}
+        {tone === 'success' ? <Check className="h-9 w-9" strokeWidth={1.75} /> : <Info className="h-8 w-8" strokeWidth={1.5} />}
       </div>
-      <h2 className="mt-5 text-[24px] font-bold tracking-tight">{title}</h2>
+      <h2 className="mt-6 text-[32px] leading-tight font-[300] tracking-[-0.03em]">{title}</h2>
       <p className="mt-2 max-w-xs text-[15px] text-muted-foreground">{description}</p>
       {earnedCents !== undefined && earnedCents > 0 && (
-        <p className="mt-5 text-[34px] font-bold text-emerald-600 tabular-nums dark:text-emerald-400">
-          +{formatMoney(earnedCents)}
+        <p className="mt-6 text-[44px] leading-none text-emerald-600 dark:text-emerald-300">
+          <Money value={`+${formatMoney(earnedCents)}`} />
         </p>
       )}
       <div className="mt-8 flex w-full max-w-xs flex-col gap-2">
         {!native && (
-          <Button size="lg" className="h-12 rounded-xl text-[15px]" onClick={primary.onClick} disabled={primary.loading}>
+          <Button size="lg" className="h-12 rounded-full bg-foreground text-[15px] text-background hover:bg-foreground/90" onClick={primary.onClick} disabled={primary.loading}>
             {primary.loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {primary.label}
           </Button>
         )}
         {secondary && (
-          <Button variant="ghost" size="lg" className="h-11 rounded-xl text-[15px] text-accent-text" onClick={secondary.onClick}>
+          <Button variant="ghost" size="lg" className="h-11 rounded-full text-[15px] font-normal text-muted-foreground" onClick={secondary.onClick}>
             {secondary.label}
           </Button>
         )}

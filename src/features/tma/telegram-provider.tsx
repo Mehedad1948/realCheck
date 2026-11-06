@@ -39,13 +39,17 @@ function setDarkClass(dark: boolean) {
 
 function applyChrome(webApp: WebApp) {
   setDarkClass(webApp.colorScheme === 'dark');
-  // Match Telegram's header and bottom bar to the grouped-sections page background.
-  if (webApp.isVersionAtLeast('6.1')) {
-    webApp.setHeaderColor('secondary_bg_color');
-    webApp.setBackgroundColor('secondary_bg_color');
-  }
-  if (webApp.isVersionAtLeast('7.10')) webApp.setBottomBarColor('secondary_bg_color');
+  // Paint Telegram's header and bottom bar in the app's own page color (from globals.css), so the
+  // brand canvas runs edge to edge. Older clients only take theme keywords for the header.
+  const background = getComputedStyle(document.documentElement).getPropertyValue('--background').trim() as `#${string}`;
+  if (webApp.isVersionAtLeast('6.9')) webApp.setHeaderColor(background);
+  else if (webApp.isVersionAtLeast('6.1')) webApp.setHeaderColor('bg_color');
+  if (webApp.isVersionAtLeast('6.1')) webApp.setBackgroundColor(background);
+  if (webApp.isVersionAtLeast('7.10')) webApp.setBottomBarColor(background);
 }
+
+/** Brand colors for Telegram's native bottom button, so it matches the in-app buttons. */
+const MAIN_BUTTON_COLORS = { color: '#4f46e5', text_color: '#ffffff' } as const;
 
 let handledStartParam = false;
 
@@ -166,6 +170,7 @@ export function useMainButton({ text, onClick, visible = true, loading = false, 
     const button = webApp.MainButton;
     button.setParams({
       text,
+      ...MAIN_BUTTON_COLORS,
       is_visible: visible,
       is_active: !disabled && !loading,
       ...(webApp.isVersionAtLeast('7.10') ? { has_shine_effect: visible && !disabled && !loading } : {}),

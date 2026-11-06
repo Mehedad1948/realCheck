@@ -11,28 +11,29 @@ const tabs = [
   { href: '/app/wallet', label: 'Wallet', icon: Wallet },
 ];
 
+/** A floating glass pill; the active tab is a solid pill, like the landing page's call to action. */
 export function TabBar() {
   const pathname = usePathname();
   // Labeling is a focused, full-screen flow.
   if (pathname.startsWith('/app/tasks/')) return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/85 pb-[var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom))] backdrop-blur-xl">
-      <ul className="mx-auto flex h-[var(--tab-bar-height)] max-w-lg">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center pb-[calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom))+14px)]">
+      <ul className="pointer-events-auto flex gap-1 rounded-full bg-card/75 p-1.5 shadow-[0_10px_40px_-12px_rgb(0_0_0/0.5)] ring-1 ring-border backdrop-blur-xl">
         {tabs.map((tab) => {
           const active = tab.href === '/app' ? pathname === '/app' : pathname.startsWith(tab.href);
           return (
-            <li key={tab.href} className="flex-1">
+            <li key={tab.href}>
               <Link
                 href={tab.href}
                 onClick={() => !active && haptics.selection()}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
-                  active ? 'text-accent-text' : 'text-muted-foreground',
+                  'flex h-11 items-center gap-2 rounded-full px-5 text-[14px] transition-colors duration-200',
+                  active ? 'bg-foreground font-medium text-background' : 'text-muted-foreground active:text-foreground',
                 )}
               >
-                <tab.icon className="h-6 w-6" strokeWidth={active ? 2.25 : 1.75} />
+                <tab.icon className="h-[18px] w-[18px]" strokeWidth={active ? 2 : 1.6} />
                 {tab.label}
               </Link>
             </li>

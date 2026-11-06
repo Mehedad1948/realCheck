@@ -26,19 +26,16 @@ function subscribe(onChange: () => void) {
 const steps = [
   {
     icon: <MousePointerClick />,
-    tone: 'bg-sky-500',
     title: 'Pick a task, tap an answer',
     text: 'Each card asks one quick question about a text or an image.',
   },
   {
     icon: <ShieldCheck />,
-    tone: 'bg-amber-500',
     title: 'Answers are final',
     text: 'Some cards are check questions with known answers. Careless answers pause your account.',
   },
   {
     icon: <BadgeCheck />,
-    tone: 'bg-emerald-500',
     title: 'Get paid per answer',
     text: 'Every accepted answer is added to your balance right away.',
   },
@@ -62,22 +59,22 @@ export function Onboarding() {
       <DrawerContent className="bg-card">
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader className="text-left md:text-left">
-            <DrawerTitle className="text-2xl">Welcome to RealCheck</DrawerTitle>
+            <DrawerTitle className="text-[30px] leading-tight font-[300] tracking-[-0.03em]">Welcome to RealCheck</DrawerTitle>
             <DrawerDescription>Earn by helping teams label their data.</DrawerDescription>
           </DrawerHeader>
           <ol className="space-y-5 px-4 py-2">
             {steps.map((step) => (
               <li key={step.title} className="flex gap-4">
-                <IconTile className={step.tone}>{step.icon}</IconTile>
+                <IconTile>{step.icon}</IconTile>
                 <div>
-                  <p className="font-semibold">{step.title}</p>
+                  <p className="font-medium">{step.title}</p>
                   <p className="text-sm text-muted-foreground">{step.text}</p>
                 </div>
               </li>
             ))}
           </ol>
           <DrawerFooter className="pb-[calc(1rem+var(--tg-safe-area-inset-bottom,0px))]">
-            <Button size="lg" className="h-12 rounded-xl text-base" onClick={dismiss}>
+            <Button size="lg" className="h-12 rounded-full bg-foreground text-base text-background hover:bg-foreground/90" onClick={dismiss}>
               Start earning
             </Button>
           </DrawerFooter>

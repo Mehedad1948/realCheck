@@ -88,59 +88,26 @@
 }
 
 /* ---------- Mini App ----------
-   Telegram's "grouped sections" look: a tinted page with section cards on top.
-   These are fallbacks for a plain browser; inside Telegram the user's theme wins. */
+   The same brand palette as the website: a near-black canvas with hairline-bordered surfaces and an
+   indigo accent. Telegram decides light or dark (see telegram-provider), not the colors themselves. */
 .tma {
-  --background: #f2f2f7;
+  --background: #fafafa;
   --card: #ffffff;
   --popover: #ffffff;
-  --primary: #2481cc;
-  --ring: #2481cc;
-  --muted: #e9e9ef;
-  --accent: #e9e9ef;
-  --secondary: #e9e9ef;
-  --muted-foreground: #8e8e93;
-  --section-label: #6d6d72;
-  --border: #e3e3e8;
-  --accent-text: #2481cc;
+  --border: #e9e9ec;
+  --accent-text: #4f46e5;
 }
 .tma.dark {
-  --background: #000000;
-  --card: #1c1c1e;
-  --popover: #1c1c1e;
-  --primary: #3e88f7;
-  --ring: #3e88f7;
-  --muted: #2c2c2e;
-  --accent: #2c2c2e;
-  --secondary: #2c2c2e;
-  --muted-foreground: #8e8e93;
-  --section-label: #8d8e93;
-  --border: #2c2c2e;
-  --accent-text: #3e88f7;
-}
-
-/* Inside Telegram, telegram-web-app.js sets --tg-theme-* on <html>. */
-html.tma[style*="--tg-theme"] {
-  --background: var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color));
-  --foreground: var(--tg-theme-text-color);
-  --card: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color));
-  --card-foreground: var(--tg-theme-text-color);
-  --popover: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color));
-  --popover-foreground: var(--tg-theme-text-color);
-  --primary: var(--tg-theme-button-color);
-  --primary-foreground: var(--tg-theme-button-text-color);
-  --secondary: var(--tg-theme-secondary-bg-color);
-  --secondary-foreground: var(--tg-theme-text-color);
-  --muted: var(--tg-theme-secondary-bg-color);
-  --muted-foreground: var(--tg-theme-hint-color);
-  --accent: var(--tg-theme-secondary-bg-color);
-  --accent-foreground: var(--tg-theme-text-color);
-  --destructive: var(--tg-theme-destructive-text-color, #ef4444);
-  --border: var(--tg-theme-section-separator-color, var(--tg-theme-secondary-bg-color));
-  --input: var(--tg-theme-section-separator-color, var(--tg-theme-hint-color));
-  --ring: var(--tg-theme-button-color);
-  --section-label: var(--tg-theme-section-header-text-color, var(--tg-theme-hint-color));
-  --accent-text: var(--tg-theme-accent-text-color, var(--tg-theme-link-color));
+  --background: #09090b;
+  --card: #111114;
+  --popover: #141417;
+  --muted: #19191d;
+  --accent: #19191d;
+  --secondary: #19191d;
+  --border: #1f1f24;
+  --muted-foreground: #8e8e98;
+  --section-label: #8e8e98;
+  --accent-text: #a5b4fc;
 }
 
 /* Keep content clear of notches and Telegram's own controls in fullscreen mode. */
@@ -172,9 +139,9 @@ html.tma[style*="--tg-theme"] {
   font-variant-numeric: tabular-nums;
 }
 
-/* Bottom tab bar height, so scrolling content clears it. */
+/* Space the floating tab bar takes at the bottom, so scrolling content clears it. */
 .tma {
-  --tab-bar-height: 64px;
+  --tab-bar-height: 84px;
 }
 
 @keyframes rc-pop {
@@ -281,5 +248,5 @@ html[data-intro='play'] .landing-intro {
 @keyframes rc-frame-border-open {
   to { top: 0; right: 0; height: 100svh; left: 0; border-radius: 0; border-color: transparent; box-shadow: none; }
 }
-@keyframes rc-scrim-in { to { opacity: 0.78; } }
+@keyframes rc-scrim-in { to { opacity: 0.3; } }
 

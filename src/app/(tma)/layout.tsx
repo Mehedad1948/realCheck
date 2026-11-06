@@ -2,11 +2,13 @@ import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { Toaster } from '@/components/ui/sonner';
+import { robotoFlex } from '@/fonts/roboto-flex';
 import { TelegramProvider } from '@/features/tma/telegram-provider';
 import '../globals.css';
 
 // Root layout for the Telegram Mini App (/app). Separate from the website's root
-// layout: no site chrome, Telegram's theme and viewport, React Query for the BFF.
+// layout: no site chrome, Telegram's viewport, React Query for the BFF. Set in Roboto Flex, the
+// landing headline's typeface, throughout.
 
 export const metadata: Metadata = {
   title: 'RealCheck',
@@ -23,7 +25,7 @@ export const viewport: Viewport = {
 
 export default function TmaLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="tma" suppressHydrationWarning>
+    <html lang="en" className={`tma ${robotoFlex.className}`} suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased">
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <QueryProvider>
