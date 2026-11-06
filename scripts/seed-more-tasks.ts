@@ -23,11 +23,9 @@ async function main() {
     ]);
   }
 
-  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
-
   await prisma.dataset.create({
     data: {
-      title: `Restaurant review sentiment (${stamp})`,
+      title: 'Restaurant review sentiment',
       description: 'Read the review and decide how the diner feels.',
       dataType: 'TEXT',
       question: 'Is this review positive, negative or neutral?',
@@ -54,7 +52,7 @@ async function main() {
 
   await prisma.dataset.create({
     data: {
-      title: `Support ticket topic (${stamp})`,
+      title: 'Support ticket topic',
       description: 'Pick the topic that best matches the customer message.',
       dataType: 'TEXT',
       question: 'What is this message about?',
@@ -88,7 +86,7 @@ async function main() {
   ];
   await prisma.dataset.create({
     data: {
-      title: `Cat or dog (${stamp})`,
+      title: 'Cat or dog',
       description: 'Tell us which animal is in the photo.',
       dataType: 'IMAGE',
       question: 'Which animal is in the photo?',

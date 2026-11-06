@@ -2,7 +2,6 @@ import { ArrowRight, BadgeCheck, Coins, ScrollText, ShieldCheck } from 'lucide-r
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
-import { HeroStars } from '@/components/site/hero-stars';
 import { HeroTitle } from '@/components/site/hero-title';
 import { LandingIntro } from '@/components/site/landing-intro';
 import { Logo } from '@/components/site/logo';
@@ -38,9 +37,7 @@ export default function LandingPage() {
         <SilkBackground />
         <div className="hero-scrim absolute inset-0 bg-background" />
       </div>
-      <div aria-hidden className="hero-frame-border pointer-events-none -z-10">
-        <HeroStars />
-      </div>
+      <div aria-hidden className="hero-frame-border pointer-events-none -z-10" />
 
       <header className="fixed inset-x-0 top-0 z-40">
         <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">

@@ -4,7 +4,7 @@ import { FileText, Image as ImageIcon, Inbox } from 'lucide-react';
 import type { OpenDataset } from '@/lib/api/types';
 import { formatMoney } from '@/lib/money';
 import { useOpenDatasets, useOpenTaskCounts } from './queries';
-import { IconTile, Row, Section } from './ui';
+import { IconTile, Money, Row, Section } from './ui';
 
 /**
  * Server-rendered from the shared cache, then kept fresh by React Query
@@ -36,22 +36,35 @@ export function OpenDatasetList({ initialData }: { initialData: OpenDataset[] })
   return (
     <Section
       title="Available tasks"
-      action={<span className="text-[13px] text-muted-foreground tabular-nums">{totalOpen.toLocaleString('en-US')} open</span>}
+      action={
+        <span className="text-[12px] text-muted-foreground tabular-nums">
+          <span className="font-semibold text-foreground">{totalOpen.toLocaleString('en-US')}</span> open
+        </span>
+      }
       footer="Pay is per accepted answer and is added to your balance instantly."
     >
       {data.map((dataset) => (
         <Row
           key={dataset.id}
           href={`/app/tasks/${dataset.id}`}
-          icon={
-            <IconTile>{dataset.dataType === 'IMAGE' ? <ImageIcon /> : <FileText />}</IconTile>
-          }
+          chevron={false}
+          icon={<IconTile>{dataset.dataType === 'IMAGE' ? <ImageIcon /> : <FileText />}</IconTile>}
           title={dataset.title}
-          subtitle={`${dataset.openTasks.toLocaleString('en-US')} ${remaining ? 'left' : 'tasks'}${dataset.description ? ` · ${dataset.description}` : ''}`}
+          subtitle={
+            <>
+              <span className="font-medium text-foreground/75 tabular-nums">{dataset.openTasks.toLocaleString('en-US')}</span>
+              {remaining ? ' left' : ' tasks'}
+              <span className="mx-1.5 text-muted-foreground/40">·</span>
+              {dataset.dataType === 'IMAGE' ? 'Image' : 'Text'}
+            </>
+          }
           trailing={
-            <span className="rounded-full px-2.5 py-1 text-[13px] font-medium text-emerald-600 tabular-nums ring-1 ring-emerald-500/25 ring-inset dark:text-emerald-300">
-              +{formatMoney(dataset.rewardCents)}
-            </span>
+            <div className="text-right">
+              <p className="text-[19px] leading-none text-emerald-600 dark:text-emerald-300">
+                <Money value={formatMoney(dataset.rewardCents)} />
+              </p>
+              <p className="mt-1.5 text-[10.5px] font-medium tracking-[0.06em] text-muted-foreground/70 uppercase">per answer</p>
+            </div>
           }
         />
       ))}

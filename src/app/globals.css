@@ -126,6 +126,9 @@
     @apply bg-background text-foreground;
   }
   .tma body {
+    font-family: var(--font-tma-sans), system-ui, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    letter-spacing: -0.005em;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
@@ -262,15 +265,6 @@ html[data-intro='play'] .landing-intro {
   to { top: 0; right: 0; height: 100svh; left: 0; border-radius: 0; border-color: transparent; box-shadow: none; }
 }
 @keyframes rc-scrim-in { to { opacity: 0.3; } }
-/* The stars belong to the boxed panel, so they fade out as it opens to full bleed. */
-@supports (animation-timeline: scroll()) {
-  .hero-stars {
-    animation: rc-stars-out linear both;
-    animation-timeline: scroll(root);
-    animation-range: 0 30vh;
-  }
-}
-@keyframes rc-stars-out { to { opacity: 0; visibility: hidden; } }
 
 /* The section after the hero: a plain box with the hero panel's insets, radius and outline. It scrolls
    at normal speed while the hero content above drifts slower and fades, so the box rises over it. */

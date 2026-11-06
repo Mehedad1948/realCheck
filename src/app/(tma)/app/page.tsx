@@ -13,7 +13,7 @@ export default function MiniAppHome() {
     <Screen>
       <HomeHeader />
       <HomeSummary />
-      <div className="mt-6">
+      <div className="mt-9">
         <Suspense
           fallback={
             <Section title="Available tasks">

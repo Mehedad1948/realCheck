@@ -2,13 +2,14 @@ import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { Toaster } from '@/components/ui/sonner';
+import { manrope } from '@/fonts/manrope';
 import { robotoFlex } from '@/fonts/roboto-flex';
 import { TelegramProvider } from '@/features/tma/telegram-provider';
 import '../globals.css';
 
 // Root layout for the Telegram Mini App (/app). Separate from the website's root
-// layout: no site chrome, Telegram's viewport, React Query for the BFF. Type matches the landing page:
-// the site's sans for text, Roboto Flex for headlines and figures.
+// layout: no site chrome, Telegram's viewport, React Query for the BFF. Manrope for text, Roboto Flex
+// for headlines and figures, as on the landing page.
 
 export const metadata: Metadata = {
   title: 'RealCheck',
@@ -31,7 +32,7 @@ const themeScript = `try{var d=document.documentElement,p=new URLSearchParams(lo
 
 export default function TmaLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`tma dark ${robotoFlex.variable}`} style={{ colorScheme: 'dark' }} suppressHydrationWarning>
+    <html lang="en" className={`tma dark ${robotoFlex.variable} ${manrope.variable}`} style={{ colorScheme: 'dark' }} suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
