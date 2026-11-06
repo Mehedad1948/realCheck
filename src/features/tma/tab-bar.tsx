@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutGrid, Wallet } from 'lucide-react';
+import { History, LayoutGrid, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import { haptics } from './telegram-provider';
 
 const tabs = [
   { href: '/app', label: 'Tasks', icon: LayoutGrid },
+  { href: '/app/history', label: 'History', icon: History },
   { href: '/app/wallet', label: 'Wallet', icon: Wallet },
 ];
 
@@ -21,8 +22,7 @@ export function TabBar() {
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center pb-[calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom))+14px)]">
       <ul className="pointer-events-auto flex gap-1 rounded-full bg-card/75 p-1.5 shadow-[0_10px_40px_-12px_rgb(0_0_0/0.5)] ring-1 ring-border backdrop-blur-xl">
         {tabs.map((tab) => {
-          const active =
-            tab.href === '/app' ? pathname === '/app' || pathname.startsWith('/app/history') : pathname.startsWith(tab.href);
+          const active = tab.href === '/app' ? pathname === '/app' : pathname.startsWith(tab.href);
           return (
             <li key={tab.href}>
               <Link
@@ -30,7 +30,7 @@ export function TabBar() {
                 onClick={() => !active && haptics.selection()}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex h-11 items-center gap-2 rounded-full px-5 text-[14px] transition-colors duration-200',
+                  'flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors duration-200',
                   active ? 'bg-foreground font-medium text-background' : 'text-muted-foreground active:text-foreground',
                 )}
               >

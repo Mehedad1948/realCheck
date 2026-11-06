@@ -12,7 +12,6 @@ import { useDatasetHistory, useHistory } from './queries';
 import { useBackButton, useTelegram } from './telegram-provider';
 import { Display, IconTile, Money, Row, Section, SkeletonRows, Surface } from './ui';
 
-const PREVIEW_ROWS = 3;
 const ACCURACY_FOOTER =
   'Accuracy is how often your answer matched the majority once a task had enough answers. Pending answers are still waiting on other people.';
 
@@ -46,43 +45,16 @@ function DatasetRow({ dataset }: { dataset: HistoryDataset }) {
   );
 }
 
-/** Home: the most recent datasets the evaluator worked on. Hidden until there is something to show. */
-export function HistoryPreview() {
-  const { status } = useTelegram();
-  const history = useHistory();
-
-  if (status === 'browser' || history.isError || history.data?.length === 0) return null;
-
-  const rows = history.data?.slice(0, PREVIEW_ROWS);
-  const more = (history.data?.length ?? 0) > PREVIEW_ROWS;
-
-  return (
-    <Section
-      title="Your history"
-      action={
-        more && (
-          <Link href="/app/history" className="text-[13px] text-accent-text">
-            See all
-          </Link>
-        )
-      }
-    >
-      {rows ? rows.map((dataset) => <DatasetRow key={dataset.id} dataset={dataset} />) : <SkeletonRows count={2} />}
-    </Section>
-  );
-}
-
 function useBackTo(href: string) {
   const router = useRouter();
   const back = useCallback(() => router.push(href), [router, href]);
   useBackButton(back);
 }
 
-/** `/app/history`: every dataset the evaluator answered in. */
+/** The History tab: every dataset the evaluator answered in. */
 export function HistoryList() {
   const { status } = useTelegram();
   const history = useHistory();
-  useBackTo('/app');
 
   if (status === 'browser') return <OpenInTelegram />;
 
