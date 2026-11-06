@@ -3,7 +3,7 @@
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Info, Loader2, Maximize2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api/client';
@@ -44,6 +44,7 @@ export function TaskRunner({ dataset }: { dataset: PublicDataset }) {
         title="You’re all caught up"
         description="You’ve answered everything available in this dataset. Try another one."
         primary={{ label: 'Browse tasks', onClick: goHome }}
+        secondary={{ label: 'See your answers', onClick: () => router.push(`/app/history/${dataset.id}`) }}
       />
     );
   } else {
@@ -208,7 +209,7 @@ function BatchSession({
 
       <div className="mt-5">
         <p className="text-[13px] text-muted-foreground">{dataset.title}</p>
-        <h1 className="mt-1.5 text-[26px] leading-[1.15] font-[320] tracking-[-0.025em]">{dataset.question}</h1>
+        <h1 className="mt-1.5 text-[26px] leading-[1.15] font-display font-[300] tracking-[-0.025em]">{dataset.question}</h1>
         {dataset.description && <Instructions text={dataset.description} />}
       </div>
 
@@ -337,16 +338,36 @@ function ProgressHeader({
 
 function Instructions({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
+  const [clipped, setClipped] = useState(false);
+  const textRef = useRef<HTMLSpanElement>(null);
+
+  // Only offer the toggle when the one-line clamp actually hides something.
+  useEffect(() => {
+    const el = textRef.current;
+    if (!el || open) return;
+    const measure = () => setClipped(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text, open]);
+
+  const expandable = clipped || open;
   return (
     <button
       type="button"
-      onClick={() => setOpen((o) => !o)}
-      className="mt-2 flex w-full items-start gap-2 text-left text-[14px] text-muted-foreground"
-      aria-expanded={open}
+      onClick={expandable ? () => setOpen((o) => !o) : undefined}
+      disabled={!expandable}
+      className="mt-2 flex w-full items-start gap-2 text-left text-[14px] text-muted-foreground disabled:cursor-default"
+      aria-expanded={expandable ? open : undefined}
     >
       <Info className="mt-0.5 h-4 w-4 shrink-0" />
-      <span className={cn('flex-1', !open && 'line-clamp-1')}>{text}</span>
-      <ChevronDown className={cn('mt-0.5 h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
+      <span ref={textRef} className={cn('flex-1', !open && 'line-clamp-1')}>
+        {text}
+      </span>
+      {expandable && (
+        <ChevronDown className={cn('mt-0.5 h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
+      )}
     </button>
   );
 }
@@ -467,7 +488,7 @@ function EndState({
       >
         {tone === 'success' ? <Check className="h-9 w-9" strokeWidth={1.75} /> : <Info className="h-8 w-8" strokeWidth={1.5} />}
       </div>
-      <h2 className="mt-6 text-[32px] leading-tight font-[300] tracking-[-0.03em]">{title}</h2>
+      <h2 className="mt-6 text-[32px] leading-tight font-display font-[260] tracking-[-0.03em]">{title}</h2>
       <p className="mt-2 max-w-xs text-[15px] text-muted-foreground">{description}</p>
       {earnedCents !== undefined && earnedCents > 0 && (
         <p className="mt-6 text-[44px] leading-none text-emerald-600 dark:text-emerald-300">

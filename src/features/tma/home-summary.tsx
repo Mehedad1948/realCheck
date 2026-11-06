@@ -2,12 +2,13 @@
 
 import { ArrowUpRight, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
+import { UserAvatar } from '@/components/user-avatar';
 import { formatMoney } from '@/lib/money';
 import { OpenInTelegram } from './open-in-telegram';
 import { useMe } from './queries';
 import { useTelegram } from './telegram-provider';
 import { SilkCard } from './silk-card';
-import { Display, Money, Surface, UserAvatar } from './ui';
+import { Display, Money, Surface } from './ui';
 
 function greeting() {
   const hour = new Date().getHours();
@@ -21,7 +22,7 @@ export function HomeHeader() {
 
   return (
     <header className="flex items-center gap-3.5 px-1 pt-3 pb-6">
-      <UserAvatar name={name ?? 'RealCheck'} photoUrl={user?.photo_url ?? me.data?.photoUrl} />
+      <UserAvatar name={name ?? 'RealCheck'} size={48} />
       <div className="min-w-0">
         <p className="text-[13px] text-muted-foreground">{name ? greeting() : 'RealCheck'}</p>
         <h1 className="truncate text-[28px] leading-[1.1]">

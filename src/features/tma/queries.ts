@@ -3,7 +3,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { queryKeys } from '@/lib/api/query-keys';
-import type { Earnings, EvaluatorProfile, OpenDataset, TaskBatch, VoteResult } from '@/lib/api/types';
+import type {
+  DatasetHistory,
+  Earnings,
+  EvaluatorProfile,
+  HistoryDataset,
+  OpenDataset,
+  OpenTaskCounts,
+  TaskBatch,
+  VoteResult,
+} from '@/lib/api/types';
 import { useTelegram } from './telegram-provider';
 
 export function useOpenDatasets(initialData?: OpenDataset[]) {
@@ -33,6 +42,34 @@ export function useEarnings() {
   });
 }
 
+/** The viewer's own remaining count per open dataset, to hide what they've finished. */
+export function useOpenTaskCounts() {
+  const { canAuthenticate } = useTelegram();
+  return useQuery({
+    queryKey: queryKeys.tma.openTaskCounts(),
+    queryFn: ({ signal }) => api<OpenTaskCounts>('/api/tma/open-task-counts', { signal }),
+    enabled: canAuthenticate,
+  });
+}
+
+export function useHistory() {
+  const { canAuthenticate } = useTelegram();
+  return useQuery({
+    queryKey: queryKeys.tma.history.all(),
+    queryFn: ({ signal }) => api<HistoryDataset[]>('/api/tma/history', { signal }),
+    enabled: canAuthenticate,
+  });
+}
+
+export function useDatasetHistory(datasetId: string) {
+  const { canAuthenticate } = useTelegram();
+  return useQuery({
+    queryKey: queryKeys.tma.history.dataset(datasetId),
+    queryFn: ({ signal }) => api<DatasetHistory>(`/api/tma/history/${datasetId}`, { signal }),
+    enabled: canAuthenticate,
+  });
+}
+
 export function useTaskBatch(datasetId: string) {
   const { canAuthenticate } = useTelegram();
   return useQuery({
@@ -55,8 +92,10 @@ export function useSubmitVote() {
       queryClient.setQueryData<EvaluatorProfile>(queryKeys.tma.me(), (me) =>
         me ? { ...me, balanceCents: result.balanceCents, tasksDone: me.tasksDone + 1 } : me,
       );
-      // Earnings history is refetched the next time the wallet is opened.
-      queryClient.invalidateQueries({ queryKey: queryKeys.tma.earnings(), refetchType: 'none' });
+      // Refetched the next time the screens that show them are opened.
+      for (const queryKey of [queryKeys.tma.earnings(), queryKeys.tma.openTaskCounts(), queryKeys.tma.history.all()]) {
+        queryClient.invalidateQueries({ queryKey, refetchType: 'none' });
+      }
     },
   });
 }

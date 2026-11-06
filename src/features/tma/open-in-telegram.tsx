@@ -9,7 +9,7 @@ export function OpenInTelegram({ startParam }: { startParam?: string }) {
       <IconTile className="h-11 w-11 rounded-full">
         <Send className="-translate-x-px translate-y-px" />
       </IconTile>
-      <p className="mt-4 text-[24px] leading-tight font-[300] tracking-[-0.03em]">Open RealCheck in Telegram</p>
+      <p className="mt-4 text-[24px] leading-tight font-display font-[260] tracking-[-0.03em]">Open RealCheck in Telegram</p>
       <p className="mt-1 text-sm text-muted-foreground">
         Your account, answers and earnings live in Telegram. You can browse open datasets here.
       </p>

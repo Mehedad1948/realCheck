@@ -4,6 +4,7 @@ import { BookOpen, CreditCard, Database, LayoutDashboard, LogOut, Plus } from 'l
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/site/logo';
+import { UserAvatar } from '@/components/user-avatar';
 import { useHashParams } from '@/hooks/useHashParams';
 import { formatMoney } from '@/lib/money';
 import { cn } from '@/lib/utils';
@@ -27,7 +28,6 @@ function useIsActive() {
 export default function Sidebar({ email, balanceCents, topUpEnabled }: Props) {
   const isActive = useIsActive();
   const { setHashParams } = useHashParams();
-  const initials = email ? email.slice(0, 2).toUpperCase() : '??';
 
   return (
     <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r border-border bg-card/50 sm:flex">
@@ -88,9 +88,7 @@ export default function Sidebar({ email, balanceCents, topUpEnabled }: Props) {
       </div>
 
       <div className="flex items-center gap-3 border-t border-border px-4 py-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-[12px] font-semibold text-white select-none">
-          {initials}
-        </div>
+        <UserAvatar name={email ?? ''} size={32} />
         <p className="min-w-0 flex-1 truncate text-sm" title={email ?? undefined}>
           {email}
         </p>

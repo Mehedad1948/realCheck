@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "prisma db seed",
+    "db:seed:more": "tsx scripts/seed-more-tasks.ts",
     "telegram:setup": "tsx scripts/telegram-setup.ts"
   },
   "prisma": {

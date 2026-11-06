@@ -135,6 +135,13 @@
   }
 }
 
+/* Headline type as on the landing page: Roboto Flex at a large optical size, which gives the fine,
+   high-contrast letterforms even at phone sizes. Pair it with a light weight such as font-[260]. */
+@utility font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-variation-settings: 'opsz' 96;
+}
+
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
@@ -192,8 +199,8 @@ html[data-intro='play'] .landing-intro {
    It is clipped, never resized, so the WebGL canvas doesn't reallocate mid-scroll. clip-path would
    cut off a border, so the outline is a sibling layer sharing the same geometry. */
 .hero-frame,
-.hero-frame-border {
-  position: absolute;
+.hero-frame-border,
+.content-frame {
   --frame-top: 88px;
   --frame-x: 16px;
   --frame-bottom: 16px;
@@ -201,7 +208,8 @@ html[data-intro='play'] .landing-intro {
 }
 @media (min-width: 768px) {
   .hero-frame,
-  .hero-frame-border {
+  .hero-frame-border,
+  .content-frame {
     --frame-x: 40px;
     --frame-bottom: 32px;
     --frame-radius: 36px;
@@ -209,9 +217,14 @@ html[data-intro='play'] .landing-intro {
 }
 @media (min-width: 1280px) {
   .hero-frame,
-  .hero-frame-border {
+  .hero-frame-border,
+  .content-frame {
     --frame-x: 64px;
   }
+}
+.hero-frame,
+.hero-frame-border {
+  position: absolute;
 }
 .hero-frame {
   height: 100svh;
@@ -249,4 +262,41 @@ html[data-intro='play'] .landing-intro {
   to { top: 0; right: 0; height: 100svh; left: 0; border-radius: 0; border-color: transparent; box-shadow: none; }
 }
 @keyframes rc-scrim-in { to { opacity: 0.3; } }
+
+/* The section after the hero: a plain box with the hero panel's insets, radius and outline. It scrolls
+   at normal speed while the hero content above drifts slower and fades, so the box rises over it. */
+.content-frame {
+  position: relative;
+  z-index: 10;
+  /* Same size and gaps as the hero panel: it sits exactly where the panel did once scrolled to
+     (#how, scroll-margin), and its content is centred. Grows past the window only if it must. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0 var(--frame-x) var(--frame-bottom);
+  min-height: calc(100svh - var(--frame-top) - var(--frame-bottom));
+  scroll-margin-top: var(--frame-top);
+  border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+  border-radius: var(--frame-radius);
+  /* Frosted glass over the silk: translucent fill plus a strong backdrop blur. */
+  background: color-mix(in oklab, var(--background) 55%, transparent);
+  backdrop-filter: blur(40px) saturate(1.4);
+  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent),
+    0 -24px 80px -24px color-mix(in oklab, black 50%, transparent);
+}
+@supports (animation-timeline: scroll()) {
+  .hero-parallax {
+    animation: rc-hero-drift linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 100svh;
+  }
+}
+@keyframes rc-hero-drift {
+  to { transform: translateY(45svh) scale(0.94); opacity: 0; filter: blur(6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-parallax { animation: none; }
+}
 

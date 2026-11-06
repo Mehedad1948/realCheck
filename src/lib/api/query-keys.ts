@@ -10,5 +10,10 @@ export const queryKeys = {
     me: () => [...queryKeys.tma.all, 'me'] as const,
     earnings: () => [...queryKeys.tma.all, 'earnings'] as const,
     taskBatch: (datasetId: string) => [...queryKeys.tma.all, 'task-batch', datasetId] as const,
+    openTaskCounts: () => [...queryKeys.tma.all, 'open-task-counts'] as const,
+    history: {
+      all: () => [...queryKeys.tma.all, 'history'] as const,
+      dataset: (datasetId: string) => [...queryKeys.tma.history.all(), datasetId] as const,
+    },
   },
 };

@@ -58,7 +58,7 @@ export function Row({ icon, title, subtitle, trailing, href, chevron = Boolean(h
       {icon && <div className="shrink-0">{icon}</div>}
       <div className="flex min-w-0 flex-1 items-center gap-3 border-b border-border py-2.5 pr-4 group-last/row:border-b-0">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[15px] leading-tight font-[450]">{title}</div>
+          <div className="truncate text-[15px] leading-tight font-medium">{title}</div>
           {subtitle && <div className="mt-0.5 truncate text-[13px] text-muted-foreground">{subtitle}</div>}
         </div>
         {trailing && <div className="shrink-0 text-[15px] text-muted-foreground">{trailing}</div>}
@@ -86,9 +86,9 @@ export function Surface({ children, className }: { children: ReactNode; classNam
   );
 }
 
-/** Large figures and headlines: Roboto Flex at a light weight, set tight. */
+/** Large figures and headlines, set like the landing headline: Roboto Flex, light and tight. */
 export function Display({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cn('font-[280] tracking-[-0.035em] tabular-nums', className)}>{children}</span>;
+  return <span className={cn('font-display font-[260] tracking-[-0.03em] tabular-nums', className)}>{children}</span>;
 }
 
 /** An amount with the cents dimmed, the way the landing headline dims its second line. */
@@ -112,27 +112,6 @@ export function IconTile({ children, className }: { children: ReactNode; classNa
       )}
     >
       {children}
-    </div>
-  );
-}
-
-export function UserAvatar({ name, photoUrl, size = 44 }: { name: string; photoUrl?: string | null; size?: number }) {
-  const initials = name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-  return (
-    <div
-      className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-indigo-400 to-indigo-700 font-medium text-white ring-1 ring-white/10 ring-inset"
-      style={{ width: size, height: size, fontSize: size * 0.38 }}
-    >
-      {initials || '?'}
-      {photoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={photoUrl} alt="" className="absolute inset-0 h-full w-full object-cover" referrerPolicy="no-referrer" />
-      )}
     </div>
   );
 }

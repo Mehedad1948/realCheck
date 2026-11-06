@@ -59,7 +59,7 @@ export function Onboarding() {
       <DrawerContent className="bg-card">
         <div className="mx-auto w-full max-w-md">
           <DrawerHeader className="text-left md:text-left">
-            <DrawerTitle className="text-[30px] leading-tight font-[300] tracking-[-0.03em]">Welcome to RealCheck</DrawerTitle>
+            <DrawerTitle className="text-[30px] leading-tight font-display font-[260] tracking-[-0.03em]">Welcome to RealCheck</DrawerTitle>
             <DrawerDescription>Earn by helping teams label their data.</DrawerDescription>
           </DrawerHeader>
           <ol className="space-y-5 px-4 py-2">

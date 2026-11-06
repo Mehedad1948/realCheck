@@ -21,7 +21,8 @@ export function TabBar() {
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center pb-[calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom))+14px)]">
       <ul className="pointer-events-auto flex gap-1 rounded-full bg-card/75 p-1.5 shadow-[0_10px_40px_-12px_rgb(0_0_0/0.5)] ring-1 ring-border backdrop-blur-xl">
         {tabs.map((tab) => {
-          const active = tab.href === '/app' ? pathname === '/app' : pathname.startsWith(tab.href);
+          const active =
+            tab.href === '/app' ? pathname === '/app' || pathname.startsWith('/app/history') : pathname.startsWith(tab.href);
           return (
             <li key={tab.href}>
               <Link

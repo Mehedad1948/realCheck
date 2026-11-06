@@ -66,6 +66,42 @@ export type EarningsEntry = {
   createdAt: string;
 };
 
+/** Per dataset id: active tasks this evaluator has not answered yet. */
+export type OpenTaskCounts = { remaining: Record<string, number> };
+
+/** A dataset the evaluator has answered in, with their results there. */
+export type HistoryDataset = {
+  id: string;
+  title: string;
+  dataType: DataType;
+  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED';
+  answers: number;
+  earnedCents: number;
+  /** Share of resolved answers that matched the consensus, 0..1, or null before any resolved. */
+  accuracy: number | null;
+  /** Answers whose task has not been resolved yet. */
+  pending: number;
+  lastAnsweredAt: string;
+};
+
+export type HistoryOutcome = 'match' | 'mismatch' | 'tie' | 'pending';
+
+export type HistoryAnswer = {
+  taskId: string;
+  content: string;
+  imageUrl: string | null;
+  selection: string;
+  outcome: HistoryOutcome;
+  /** Only set on a mismatch. */
+  consensusLabel: string | null;
+  answeredAt: string;
+};
+
+export type DatasetHistory = {
+  dataset: HistoryDataset & { question: string; remaining: number };
+  answers: HistoryAnswer[];
+};
+
 export type Earnings = {
   todayCents: number;
   weekCents: number;

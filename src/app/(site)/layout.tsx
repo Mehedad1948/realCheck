@@ -3,6 +3,7 @@ import { Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Toaster } from '@/components/ui/sonner';
+import { robotoFlex } from '@/fonts/roboto-flex';
 import '../globals.css';
 
 // Root layout for the website and client dashboard. The Telegram Mini App has its
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={robotoFlex.variable} suppressHydrationWarning>
       <body className={`${geistMono.variable} font-sans antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: introScript }} />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>

@@ -92,7 +92,7 @@ export function WalletView() {
         ) : earnings.data.recent.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-10 text-center">
             <Clock className="h-9 w-9 text-muted-foreground/60" strokeWidth={1.25} />
-            <p className="mt-3 text-[17px] font-[450]">No earnings yet</p>
+            <p className="mt-3 text-[17px] font-medium">No earnings yet</p>
             <p className="mt-1 text-sm text-muted-foreground">Your paid answers will show up here.</p>
           </div>
         ) : (

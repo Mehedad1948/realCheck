@@ -59,7 +59,7 @@ export default function LandingPage() {
       </header>
 
       {/* pt-22 clears the fixed header. */}
-      <section className="relative flex min-h-svh flex-col pt-22">
+      <section className="hero-parallax relative flex min-h-svh flex-col pt-22">
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">
           <HeroTitle className="landing-rise text-[clamp(2.75rem,7vw,5.75rem)] leading-[1.02] tracking-[-0.03em]" />
           <p className="landing-rise mt-7 text-base text-muted-foreground [--rise-delay:150ms] md:text-lg">
@@ -89,29 +89,32 @@ export default function LandingPage() {
       </section>
 
       <main>
-        <section id="how" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-32">
-          <h2 className="text-sm text-muted-foreground">How it works</h2>
-          <ol className="mt-12 grid gap-12 md:grid-cols-3 md:gap-8">
-            {steps.map((step, i) => (
-              <li key={step.title} className="border-t border-border pt-6">
-                <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
-                <h3 className="mt-6 text-3xl font-medium tracking-tight">{step.title}</h3>
-                <p className="mt-2 text-muted-foreground">{step.text}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
+        {/* A plain box shaped like the hero panel that rises over the hero (.content-frame in globals.css). */}
+        <div id="how" className="content-frame">
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-14 px-6 py-16 md:gap-20 md:px-10">
+            <section>
+              <h2 className="text-sm text-muted-foreground">How it works</h2>
+              <ol className="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
+                {steps.map((step, i) => (
+                  <li key={step.title} className="border-t border-border pt-6">
+                    <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
+                    <h3 className="mt-6 text-3xl font-medium tracking-tight">{step.title}</h3>
+                    <p className="mt-2 text-muted-foreground">{step.text}</p>
+                  </li>
+                ))}
+              </ol>
+            </section>
 
-        <section className="mx-auto max-w-6xl px-6 pb-32">
-          <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-4">
-            {principles.map((item) => (
-              <li key={item.label} className="flex flex-col gap-6 bg-background/85 p-6">
-                <item.icon className="h-5 w-5 text-primary" strokeWidth={1.5} />
-                <span className="text-sm font-medium">{item.label}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+            <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-4">
+              {principles.map((item) => (
+                <li key={item.label} className="flex flex-col gap-6 bg-background/85 p-6">
+                  <item.icon className="h-5 w-5 text-primary" strokeWidth={1.5} />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
         <section className="relative isolate overflow-hidden border-t border-border py-40 text-center">
           <div aria-hidden className="absolute -bottom-75 left-1/2 -z-10 h-125 w-200 -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]" />

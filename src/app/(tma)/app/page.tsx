@@ -1,5 +1,6 @@
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { HistoryPreview } from '@/features/tma/history';
 import { HomeHeader, HomeSummary } from '@/features/tma/home-summary';
 import { OpenDatasetList } from '@/features/tma/open-dataset-list';
 import { Screen, Section, SkeletonRows } from '@/features/tma/ui';
@@ -23,6 +24,7 @@ export default function MiniAppHome() {
         >
           <OpenDatasets />
         </Suspense>
+        <HistoryPreview />
       </div>
     </Screen>
   );
