@@ -303,3 +303,27 @@ html[data-intro='play'] .landing-intro {
   .hero-parallax { animation: none; }
 }
 
+/* Phones and tablets: a still frame of the silk (captured from the shader, already composited over the
+   page background) replaces the live shader and the glow. Same query as STILL_QUERY in
+   silk-background.tsx. The images sit inside the media query, so desktops never download them. */
+.silk-still { display: none; }
+@media (max-width: 767px), (pointer: coarse), (pointer: none) {
+  .silk-still {
+    display: block;
+    background: url('/images/silk-light.webp') center / cover no-repeat;
+  }
+  .dark .silk-still { background-image: url('/images/silk-dark.webp'); }
+  .hero-glow { display: none; }
+  /* Blur filters are redrawn on every scroll frame; mobile GPUs feel that, so keep them light. */
+  .content-frame {
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-parallax { animation-name: rc-hero-drift-lite; }
+  }
+}
+@keyframes rc-hero-drift-lite {
+  to { transform: translateY(45svh) scale(0.94); opacity: 0; }
+}
+

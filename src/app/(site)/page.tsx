@@ -31,9 +31,9 @@ export default function LandingPage() {
       <LandingIntro />
       {/* Silk fixed behind the whole page: a rounded panel that opens to full bleed on scroll, then dims
           behind the content further down (.hero-frame in globals.css). The glow is a fallback where
-          WebGL is unavailable; the silk paints over it. */}
+          WebGL is unavailable; the silk paints over it. Phones get a still image instead of either. */}
       <div aria-hidden className="hero-frame pointer-events-none inset-0 -z-10 overflow-hidden bg-muted/40 dark:bg-white/[0.02]">
-        <div className="absolute -top-50 left-1/2 h-130 w-225 -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
+        <div className="hero-glow absolute -top-50 left-1/2 h-130 w-225 -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
         <SilkBackground />
         <div className="hero-scrim absolute inset-0 bg-background" />
       </div>
