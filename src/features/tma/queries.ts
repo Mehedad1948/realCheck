@@ -10,9 +10,13 @@ import type {
   HistoryDataset,
   OpenDataset,
   OpenTaskCounts,
+  Payouts,
   TaskBatch,
   VoteResult,
+  WithdrawalSummary,
 } from '@/lib/api/types';
+import type { linkWalletSchema } from '@/lib/validation';
+import type { z } from 'zod';
 import { useTelegram } from './telegram-provider';
 
 export function useOpenDatasets(initialData?: OpenDataset[]) {
@@ -95,9 +99,59 @@ export function useSubmitVote() {
           : me,
       );
       // Refetched the next time the screens that show them are opened.
-      for (const queryKey of [queryKeys.tma.earnings(), queryKeys.tma.openTaskCounts(), queryKeys.tma.history.all()]) {
+      for (const queryKey of [
+        queryKeys.tma.earnings(),
+        queryKeys.tma.payouts(),
+        queryKeys.tma.openTaskCounts(),
+        queryKeys.tma.history.all(),
+      ]) {
         queryClient.invalidateQueries({ queryKey, refetchType: 'none' });
       }
     },
+  });
+}
+
+export function usePayouts() {
+  const { canAuthenticate } = useTelegram();
+  return useQuery({
+    queryKey: queryKeys.tma.payouts(),
+    queryFn: ({ signal }) => api<Payouts>('/api/tma/payouts', { signal }),
+    enabled: canAuthenticate,
+  });
+}
+
+/** Money moved: balances, earnings and the payout list all need a fresh read. */
+function useRefreshMoney() {
+  const queryClient = useQueryClient();
+  return () => {
+    for (const queryKey of [queryKeys.tma.payouts(), queryKeys.tma.me(), queryKeys.tma.earnings()]) {
+      queryClient.invalidateQueries({ queryKey });
+    }
+  };
+}
+
+export function useLinkWallet() {
+  const refresh = useRefreshMoney();
+  return useMutation({
+    mutationFn: (input: z.input<typeof linkWalletSchema>) =>
+      api<{ address: string }>('/api/tma/wallet', { method: 'PUT', json: input }),
+    onSuccess: refresh,
+  });
+}
+
+export function useUnlinkWallet() {
+  const refresh = useRefreshMoney();
+  return useMutation({
+    mutationFn: () => api<{ ok: true }>('/api/tma/wallet', { method: 'DELETE' }),
+    onSuccess: refresh,
+  });
+}
+
+export function useRequestWithdrawal() {
+  const refresh = useRefreshMoney();
+  return useMutation({
+    mutationFn: (amountCents: number) =>
+      api<WithdrawalSummary>('/api/tma/withdrawals', { method: 'POST', json: { amountCents } }),
+    onSuccess: refresh,
   });
 }

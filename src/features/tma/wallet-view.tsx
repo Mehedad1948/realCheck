@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowDownLeft, ArrowUpRight, Award, CheckCircle2, Clock, Coins, Target, Undo2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { formatMoney } from '@/lib/money';
 import { MIN_REPUTATION } from '@/lib/constants';
 import type { EarningsEntry } from '@/lib/api/types';
@@ -8,6 +9,16 @@ import { OpenInTelegram } from './open-in-telegram';
 import { useEarnings, useMe } from './queries';
 import { useTelegram } from './telegram-provider';
 import { IconTile, Money, Row, Section, SkeletonRows, Surface } from './ui';
+
+// TON Connect touches `window` as soon as it loads, so payouts render on the client only.
+const Payouts = dynamic(() => import('./payouts').then((m) => m.Payouts), {
+  ssr: false,
+  loading: () => (
+    <Section title="Payouts">
+      <SkeletonRows count={3} />
+    </Section>
+  ),
+});
 
 export function WalletView() {
   const { status } = useTelegram();
@@ -22,7 +33,7 @@ export function WalletView() {
   return (
     <>
       <div className="px-1 pt-6 pb-8 text-center">
-        <p className="text-[13px] text-muted-foreground">Available balance</p>
+        <p className="text-[13px] text-muted-foreground">Available to withdraw</p>
         {profile ? (
           <p className="mt-2 text-[64px] leading-none">
             <Money value={formatMoney(profile.balanceCents)} />
@@ -41,18 +52,7 @@ export function WalletView() {
         <PeriodTile label="All time" cents={earnings.data?.totalCents} />
       </Surface>
 
-      <Section title="Payouts" footer="Withdrawals to your wallet are coming soon. Your balance is safe until then.">
-        <Row
-          icon={
-            <IconTile>
-              <ArrowUpRight />
-            </IconTile>
-          }
-          title="Withdraw"
-          trailing={<span className="text-[13px]">Coming soon</span>}
-          className="opacity-60"
-        />
-      </Section>
+      <Payouts />
 
       <Section
         title="Performance"

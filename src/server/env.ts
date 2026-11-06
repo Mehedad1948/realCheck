@@ -21,6 +21,9 @@ const schema = z.object({
   /** Lets the Mini App run in a normal browser during development. Ignored in production. */
   NEXT_PUBLIC_TMA_DEV_MOCK: z.stringbool().default(false),
 
+  /** TON network evaluator wallets must be on. Use testnet while trying out payouts. */
+  TON_NETWORK: z.enum(['mainnet', 'testnet']).default('mainnet'),
+
   /** Top-ups credit balance without a payment provider. Only for demos and staging. */
   ENABLE_DEMO_TOP_UP: z.stringbool().default(false),
 });
