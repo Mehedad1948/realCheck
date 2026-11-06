@@ -1,8 +1,11 @@
-import { ArrowRight, BadgeCheck, Coins, ScrollText, ShieldCheck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
 import { HeroTitle } from '@/components/site/hero-title';
+import { ForEvaluators } from '@/components/site/landing/for-evaluators';
+import { ForTeams } from '@/components/site/landing/for-teams';
+import { TwoSides } from '@/components/site/landing/two-sides';
 import { LandingIntro } from '@/components/site/landing-intro';
 import { Logo } from '@/components/site/logo';
 import { SilkBackground } from '@/components/site/silk-background';
@@ -10,19 +13,6 @@ import { botUrl } from '@/lib/telegram';
 import { getPlatformStats } from '@/server/queries/public';
 
 const telegramUrl = botUrl(process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME);
-
-const steps = [
-  { title: 'Upload', text: 'A CSV or JSON file and one question.' },
-  { title: 'Label', text: 'Several people answer every item.' },
-  { title: 'Export', text: 'Only the labels they agree on.' },
-];
-
-const principles = [
-  { icon: BadgeCheck, label: 'Consensus voting' },
-  { icon: ShieldCheck, label: 'Hidden check questions' },
-  { icon: Coins, label: 'Pay per accepted answer' },
-  { icon: ScrollText, label: 'Complete audit trail' },
-];
 
 export default function LandingPage() {
   return (
@@ -46,11 +36,12 @@ export default function LandingPage() {
             <a href="#how" className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground sm:block">
               How it works
             </a>
-            {telegramUrl && (
-              <a href={telegramUrl} className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground sm:block">
-                Earn
-              </a>
-            )}
+            <a href="#teams" className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground md:block">
+              For teams
+            </a>
+            <a href="#earn" className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground sm:block">
+              Earn
+            </a>
             <Link href="/login" className="px-3 py-2 text-muted-foreground transition-colors hover:text-foreground">
               Sign in
             </Link>
@@ -73,11 +64,9 @@ export default function LandingPage() {
               Start a dataset
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            {telegramUrl && (
-              <a href={telegramUrl} className="text-sm font-medium text-foreground/85 transition-colors hover:text-foreground">
-                Earn on Telegram →
-              </a>
-            )}
+            <a href="#earn" className="text-sm font-medium text-foreground/85 transition-colors hover:text-foreground">
+              Earn on Telegram →
+            </a>
           </div>
         </div>
 
@@ -91,32 +80,25 @@ export default function LandingPage() {
       <main>
         {/* A plain box shaped like the hero panel that rises over the hero (.content-frame in globals.css). */}
         <div id="how" className="content-frame">
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-14 px-6 py-16 md:gap-20 md:px-10">
-            <section>
-              <h2 className="text-sm text-muted-foreground">How it works</h2>
-              <ol className="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
-                {steps.map((step, i) => (
-                  <li key={step.title} className="border-t border-border pt-6">
-                    <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
-                    <h3 className="mt-6 text-3xl font-medium tracking-tight">{step.title}</h3>
-                    <p className="mt-2 text-muted-foreground">{step.text}</p>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-4">
-              {principles.map((item) => (
-                <li key={item.label} className="flex flex-col gap-6 bg-background/85 p-6">
-                  <item.icon className="h-5 w-5 text-primary" strokeWidth={1.5} />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </li>
-              ))}
-            </ul>
+          <div className="mx-auto w-full max-w-6xl px-6 py-16 md:px-10">
+            <TwoSides />
           </div>
         </div>
 
-        <section className="relative isolate overflow-hidden border-t border-border py-40 text-center">
+        {/* One panel per audience, each tinted toward its own color from opposite corners. */}
+        <section id="teams" className="section-frame [--glow-at:100%_0%]">
+          <div className="mx-auto w-full max-w-6xl px-6 py-20 md:px-10 md:py-28">
+            <ForTeams />
+          </div>
+        </section>
+
+        <section id="earn" className="section-frame [--glow-at:0%_100%] [--glow:var(--telegram)]">
+          <div className="mx-auto w-full max-w-6xl px-6 py-20 md:px-10 md:py-28">
+            <ForEvaluators telegramUrl={telegramUrl} />
+          </div>
+        </section>
+
+        <section className="relative isolate overflow-hidden py-40 text-center">
           <div aria-hidden className="absolute -bottom-75 left-1/2 -z-10 h-125 w-200 -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]" />
           <h2 className="mx-auto max-w-3xl px-6 text-5xl font-medium tracking-[-0.04em] md:text-6xl">Start with one file.</h2>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 px-6">
