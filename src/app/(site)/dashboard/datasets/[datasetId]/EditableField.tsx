@@ -8,7 +8,7 @@ import { updateDatasetAction } from '@/server/actions/datasets';
 
 type Props = {
   datasetId: string;
-  field: 'title' | 'description' | 'requiredVotes';
+  field: 'title' | 'description' | 'requiredVotes' | 'maxVotes';
   initialValue: string | number;
   isMultiline?: boolean;
   className?: string;
@@ -34,7 +34,7 @@ export function EditableField({ datasetId, field, initialValue, isMultiline = fa
   const save = () => {
     if (value === String(initialValue)) return setIsEditing(false);
     const change =
-      field === 'requiredVotes'
+      field === 'requiredVotes' || field === 'maxVotes'
         ? ({ field, value: Number(value) } as const)
         : ({ field, value } as const);
 

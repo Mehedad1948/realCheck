@@ -46,6 +46,7 @@ export const GET = route<{ datasetId: string }>(async (request, { params }) => {
           collectedVotes: true,
           consensusLabel: true,
           agreement: true,
+          confidence: true,
           votes: { select: { selection: true } },
         },
       });
@@ -60,6 +61,7 @@ export const GET = route<{ datasetId: string }>(async (request, { params }) => {
           votes: task.collectedVotes,
           consensusLabel: task.consensusLabel,
           agreement: task.agreement,
+          confidence: task.confidence,
           voteCounts: counts,
         };
       }
@@ -72,10 +74,10 @@ export const GET = route<{ datasetId: string }>(async (request, { params }) => {
     async start(controller) {
       try {
         if (format === 'csv') {
-          const header = ['task_id', 'content', 'image_url', 'status', 'votes', 'consensus_label', 'agreement', ...options.map((o) => `votes_${o}`)];
+          const header = ['task_id', 'content', 'image_url', 'status', 'votes', 'consensus_label', 'agreement', 'confidence', ...options.map((o) => `votes_${o}`)];
           controller.enqueue(encoder.encode(header.map(csvCell).join(',') + '\n'));
           for await (const row of rows()) {
-            const cells = [row.taskId, row.content, row.imageUrl, row.status, row.votes, row.consensusLabel, row.agreement, ...options.map((o) => row.voteCounts[o])];
+            const cells = [row.taskId, row.content, row.imageUrl, row.status, row.votes, row.consensusLabel, row.agreement, row.confidence, ...options.map((o) => row.voteCounts[o])];
             controller.enqueue(encoder.encode(cells.map(csvCell).join(',') + '\n'));
           }
         } else {

@@ -1,5 +1,6 @@
 import 'server-only';
 import { cacheLife, cacheTag } from 'next/cache';
+import { GOLD_MAX_EXPOSURES } from '@/lib/constants';
 import { tags } from '@/server/cache-tags';
 import { prisma } from '@/server/db';
 
@@ -29,7 +30,8 @@ export async function getOwnerDatasets(ownerId: string) {
     }),
     prisma.task.groupBy({
       by: ['datasetId'],
-      where: { dataset: { ownerId }, status: 'COMPLETED', isValidation: false },
+      // Disputed items are done too: evaluators answered them as far as the dataset allows.
+      where: { dataset: { ownerId }, status: { in: ['COMPLETED', 'DISPUTED'] }, isValidation: false },
       _count: { _all: true },
     }),
   ]);
@@ -61,6 +63,7 @@ export async function getOwnerDataset(ownerId: string, datasetId: string) {
       dataType: true,
       rewardCents: true,
       requiredVotes: true,
+      maxVotes: true,
       createdAt: true,
       tasks: {
         take: 5,
@@ -70,6 +73,7 @@ export async function getOwnerDataset(ownerId: string, datasetId: string) {
           content: true,
           imageUrls: true,
           collectedVotes: true,
+          targetVotes: true,
           status: true,
           isValidation: true,
           consensusLabel: true,
@@ -80,30 +84,53 @@ export async function getOwnerDataset(ownerId: string, datasetId: string) {
   });
   if (!dataset) return null;
 
-  const [byStatus, goldTasks, votes] = await Promise.all([
+  const [byStatus, goldTasks, liveGoldTasks, votes, resolvedVotes, gold] = await Promise.all([
     prisma.task.groupBy({
       by: ['status'],
       where: { datasetId, isValidation: false },
       _count: { _all: true },
     }),
     prisma.task.count({ where: { datasetId, isValidation: true } }),
+    prisma.task.count({ where: { datasetId, isValidation: true, collectedVotes: { lt: GOLD_MAX_EXPOSURES } } }),
     prisma.vote.count({ where: { task: { datasetId } } }),
+    prisma.task.aggregate({
+      where: { datasetId, isValidation: false, status: { in: ['COMPLETED', 'DISPUTED'] } },
+      _sum: { collectedVotes: true },
+    }),
+    prisma.vote.groupBy({
+      by: ['isCorrect'],
+      where: { task: { datasetId }, isCorrect: { not: null } },
+      _count: { _all: true },
+    }),
   ]);
 
-  const count = (status: 'ACTIVE' | 'COMPLETED') => byStatus.find((row) => row.status === status)?._count._all ?? 0;
-  const completedTasks = count('COMPLETED');
+  const count = (status: 'ACTIVE' | 'COMPLETED' | 'DISPUTED') =>
+    byStatus.find((row) => row.status === status)?._count._all ?? 0;
+  const resolvedTasks = count('COMPLETED');
+  const disputedTasks = count('DISPUTED');
   const remainingTasks = count('ACTIVE');
+  const doneTasks = resolvedTasks + disputedTasks;
+  const goldAnswers = gold.reduce((sum, row) => sum + row._count._all, 0);
 
   return {
     ...dataset,
     stats: {
-      totalTasks: completedTasks + remainingTasks,
-      completedTasks,
+      totalTasks: doneTasks + remainingTasks,
+      completedTasks: doneTasks,
+      resolvedTasks,
+      disputedTasks,
       remainingTasks,
       goldTasks,
+      // Golden tasks not yet retired for over-exposure.
+      liveGoldTasks,
       votes,
-      // Upper bound: every remaining task still needs at most `requiredVotes` paid votes.
+      /** Answers it took per finished item. Above requiredVotes means items escalated. */
+      votesPerItem: doneTasks > 0 ? (resolvedVotes._sum.collectedVotes ?? 0) / doneTasks : null,
+      /** Share of check questions evaluators got right in this dataset. */
+      goldAccuracy: goldAnswers > 0 ? (gold.find((row) => row.isCorrect)?._count._all ?? 0) / goldAnswers : null,
+      // Typical cost. Items whose answers disagree can cost up to maxVotes answers.
       estimatedCostCents: remainingTasks * dataset.requiredVotes * dataset.rewardCents,
+      maxCostCents: remainingTasks * dataset.maxVotes * dataset.rewardCents,
     },
   };
 }

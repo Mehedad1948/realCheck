@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { ACTIVATION_FUNDING_TASKS } from '@/lib/constants';
+import { ACTIVATION_FUNDING_TASKS, MAX_REQUIRED_VOTES } from '@/lib/constants';
 import { formatMoney } from '@/lib/money';
 import {
   createDatasetSchema,
@@ -19,16 +19,28 @@ import { clientAction } from './client-action';
 async function findOwnedDataset(ownerId: string, datasetId: string) {
   const dataset = await prisma.dataset.findFirst({
     where: { id: datasetId, ownerId },
-    select: { id: true, ownerId: true, status: true, dataType: true, options: true, rewardCents: true, requiredVotes: true },
+    select: {
+      id: true,
+      ownerId: true,
+      status: true,
+      dataType: true,
+      options: true,
+      rewardCents: true,
+      requiredVotes: true,
+      maxVotes: true,
+    },
   });
   if (!dataset) throw errors.notFound('Dataset not found.');
   return dataset;
 }
 
+/** By default, items whose answers disagree can collect two extra answers. */
+const defaultMaxVotes = (requiredVotes: number) => Math.min(requiredVotes + 2, MAX_REQUIRED_VOTES);
+
 export const createDatasetAction = clientAction(createDatasetSchema, async (input, viewer) => {
   const dataset = await prisma.dataset.create({
     // Starts paused: it has no tasks yet, and activation checks the budget.
-    data: { ...input, ownerId: viewer.id, status: 'PAUSED' },
+    data: { ...input, maxVotes: defaultMaxVotes(input.requiredVotes), ownerId: viewer.id, status: 'PAUSED' },
     select: { id: true },
   });
   expireOwnerDatasets(viewer.id, 'immediate');
@@ -44,6 +56,25 @@ export const updateDatasetAction = clientAction(
       const votes = await prisma.vote.count({ where: { task: { datasetId } } });
       if (votes > 0) {
         throw errors.conflict('LOCKED', 'Required votes can’t change after labeling has started.');
+      }
+      await prisma.$transaction([
+        prisma.dataset.update({
+          where: { id: datasetId },
+          data: { requiredVotes: change.value, maxVotes: Math.max(dataset.maxVotes, change.value) },
+        }),
+        prisma.task.updateMany({ where: { datasetId }, data: { targetVotes: change.value } }),
+      ]);
+      expireDataset({ datasetId, ownerId: dataset.ownerId }, 'immediate');
+      return;
+    }
+
+    if (change.field === 'maxVotes') {
+      if (change.value < dataset.requiredVotes) {
+        throw errors.validation(`Max answers can’t be below answers per item (${dataset.requiredVotes}).`);
+      }
+      // Lowering the cap could strand items that already escalated past it.
+      if (change.value < dataset.maxVotes && (await prisma.vote.count({ where: { task: { datasetId } } })) > 0) {
+        throw errors.conflict('LOCKED', 'Max answers can only go up after labeling has started.');
       }
     }
 
@@ -96,6 +127,7 @@ export const uploadTasksAction = clientAction(uploadTasksSchema, async ({ datase
       datasetId,
       content: row.content,
       imageUrls: dataset.dataType === 'IMAGE' ? [row.content] : [],
+      targetVotes: dataset.requiredVotes,
       isValidation: row.correctAnswer !== undefined,
       correctAnswer: row.correctAnswer ?? null,
     };

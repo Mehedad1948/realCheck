@@ -14,7 +14,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:seed:more": "tsx scripts/seed-more-tasks.ts",
-    "telegram:setup": "tsx scripts/telegram-setup.ts"
+    "telegram:setup": "tsx scripts/telegram-setup.ts",
+    "quality:report": "tsx scripts/quality-report.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

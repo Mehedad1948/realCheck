@@ -46,6 +46,7 @@ export const updateDatasetSchema = z.discriminatedUnion('field', [
   z.object({ field: z.literal('title'), value: z.string().trim().min(3).max(120) }),
   z.object({ field: z.literal('description'), value: z.string().trim().max(2000) }),
   z.object({ field: z.literal('requiredVotes'), value: z.number().int().min(1).max(MAX_REQUIRED_VOTES) }),
+  z.object({ field: z.literal('maxVotes'), value: z.number().int().min(1).max(MAX_REQUIRED_VOTES) }),
 ]);
 export type UpdateDatasetInput = z.input<typeof updateDatasetSchema>;
 

@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, CircleDollarSign, Coins, Layers, MessagesSquare, Send, Upload } from 'lucide-react';
+import { Check, ChevronLeft, CircleDollarSign, Coins, Layers, MessagesSquare, Send, ShieldCheck, Upload } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -87,12 +87,17 @@ async function DatasetDetails({ params }: Props) {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Items" value={stats.totalTasks.toLocaleString('en-US')} hint={`+ ${stats.goldTasks} check question${stats.goldTasks === 1 ? "" : "s"}`} icon={Layers} />
-        <StatCard label="Labeled" value={`${progress}%`} hint={`${stats.completedTasks.toLocaleString('en-US')} reached consensus`} icon={Check} />
+        <StatCard
+          label="Labeled"
+          value={`${progress}%`}
+          hint={`${stats.resolvedTasks.toLocaleString('en-US')} reached consensus${stats.disputedTasks > 0 ? ` · ${stats.disputedTasks.toLocaleString('en-US')} disputed` : ''}`}
+          icon={Check}
+        />
         <StatCard label="Answers collected" value={stats.votes.toLocaleString('en-US')} icon={MessagesSquare} />
         <StatCard
-          label={isUnderfunded ? 'Balance too low to finish' : 'Max cost to finish'}
+          label={isUnderfunded ? 'Balance too low to finish' : 'Est. cost to finish'}
           value={formatMoney(stats.estimatedCostCents)}
-          hint={`Balance ${formatMoney(viewer.balanceCents)}`}
+          hint={`Up to ${formatMoney(stats.maxCostCents)} · balance ${formatMoney(viewer.balanceCents)}`}
           icon={CircleDollarSign}
           tone={isUnderfunded ? 'danger' : undefined}
         />
@@ -106,8 +111,8 @@ async function DatasetDetails({ params }: Props) {
                 <div>
                   <h2 className="font-semibold">Labeling progress</h2>
                   <p className="text-[13px] text-muted-foreground">
-                    {stats.completedTasks.toLocaleString('en-US')} of {stats.totalTasks.toLocaleString('en-US')} items have{' '}
-                    {dataset.requiredVotes} matching answers
+                    {stats.completedTasks.toLocaleString('en-US')} of {stats.totalTasks.toLocaleString('en-US')} items finished
+                    {stats.disputedTasks > 0 && ` · ${stats.disputedTasks.toLocaleString('en-US')} disputed, review these in the export`}
                   </p>
                 </div>
                 <span className="text-2xl font-semibold tabular-nums">{progress}%</span>
@@ -166,7 +171,7 @@ async function DatasetDetails({ params }: Props) {
                         </td>
                         <td className="px-5 py-3 text-right text-muted-foreground tabular-nums">
                           {task.collectedVotes}
-                          {!task.isValidation && ` / ${dataset.requiredVotes}`}
+                          {!task.isValidation && ` / ${task.targetVotes}`}
                         </td>
                         <td className="px-5 py-3 text-right whitespace-nowrap">
                           {task.status === 'COMPLETED' ? (
@@ -177,6 +182,8 @@ async function DatasetDetails({ params }: Props) {
                             ) : (
                               <span className="font-medium text-warning">Tie</span>
                             )
+                          ) : task.status === 'DISPUTED' ? (
+                            <span className="font-medium text-warning">Disputed</span>
                           ) : (
                             <span className="text-muted-foreground">{task.isValidation ? 'Known answer' : 'In progress'}</span>
                           )}
@@ -224,6 +231,12 @@ async function DatasetDetails({ params }: Props) {
                   </dd>
                 </div>
                 <div>
+                  <dt className="text-[12px] font-medium text-muted-foreground">Max if answers disagree</dt>
+                  <dd className="mt-1 font-medium">
+                    <EditableField datasetId={dataset.id} field="maxVotes" initialValue={dataset.maxVotes} type="number" className="max-w-16" />
+                  </dd>
+                </div>
+                <div>
                   <dt className="text-[12px] font-medium text-muted-foreground">Reward per answer</dt>
                   <dd className="mt-1 flex items-center gap-1.5 font-medium">
                     <Coins className="h-3.5 w-3.5 text-muted-foreground" />
@@ -233,6 +246,8 @@ async function DatasetDetails({ params }: Props) {
               </div>
             </dl>
           </section>
+
+          <QualityPanel dataset={dataset} />
 
           {shareUrl && (
             <section className="rounded-xl border border-border bg-card p-5">
@@ -258,7 +273,12 @@ function LaunchChecklist({ dataset, balanceCents }: { dataset: OwnerDataset; bal
   const neededCents = Math.min(stats.remainingTasks, ACTIVATION_FUNDING_TASKS) * dataset.requiredVotes * dataset.rewardCents;
   const checks = [
     { label: 'Items uploaded', done: stats.remainingTasks > 0, hint: stats.remainingTasks > 0 ? `${stats.remainingTasks} waiting` : 'Upload data first' },
-    { label: 'Check questions added', done: stats.goldTasks > 0, hint: stats.goldTasks > 0 ? `${stats.goldTasks} added` : 'Recommended for quality', optional: true },
+    {
+      label: 'Check questions added',
+      done: stats.liveGoldTasks >= recommendedGold(stats.totalTasks),
+      hint: `${stats.liveGoldTasks} of ${recommendedGold(stats.totalTasks)} recommended`,
+      optional: true,
+    },
     {
       label: 'Balance covers the next batch',
       done: stats.remainingTasks > 0 && balanceCents >= neededCents,
@@ -292,6 +312,57 @@ function LaunchChecklist({ dataset, balanceCents }: { dataset: OwnerDataset; bal
         ))}
       </ul>
       <GoLiveButton datasetId={dataset.id} disabled={!ready} />
+    </section>
+  );
+}
+
+/** Enough check questions that evaluators rarely run out: 5% of items, at least 20. */
+function recommendedGold(totalTasks: number) {
+  return Math.max(20, Math.ceil(totalTasks * 0.05));
+}
+
+function QualityPanel({ dataset }: { dataset: OwnerDataset }) {
+  const { stats } = dataset;
+  const recommended = recommendedGold(stats.totalTasks);
+  const rows = [
+    {
+      label: 'Check question accuracy',
+      value: stats.goldAccuracy === null ? '—' : `${Math.round(stats.goldAccuracy * 100)}%`,
+      hint: 'How often evaluators matched your known answers',
+    },
+    {
+      label: 'Answers per finished item',
+      value: stats.votesPerItem === null ? '—' : stats.votesPerItem.toFixed(1),
+      hint: `Items start at ${dataset.requiredVotes} answers and get more, up to ${dataset.maxVotes}, only when evaluators disagree`,
+    },
+    {
+      label: 'Active check questions',
+      value: `${stats.liveGoldTasks} / ${recommended}`,
+      hint:
+        stats.liveGoldTasks < recommended
+          ? 'Add more: each evaluator sees a check question only once, and well-used ones are retired'
+          : 'Each evaluator sees a check question only once; well-used ones are retired',
+      warn: stats.liveGoldTasks < recommended,
+    },
+  ];
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4 text-success" />
+        <h2 className="font-semibold">Quality control</h2>
+      </div>
+      <dl className="mt-4 space-y-4 text-sm">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-[12px] font-medium text-muted-foreground">{row.label}</dt>
+              <dd className={cn('font-semibold tabular-nums', row.warn && 'text-warning')}>{row.value}</dd>
+            </div>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">{row.hint}</p>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { PageHeader } from '@/components/site/page-header';
-import { ACTIVATION_FUNDING_TASKS, UPLOAD_CHUNK_SIZE } from '@/lib/constants';
+import { ACTIVATION_FUNDING_TASKS, MIN_REPUTATION, UPLOAD_CHUNK_SIZE } from '@/lib/constants';
 
 export const metadata: Metadata = { title: 'Guide' };
 
@@ -78,8 +78,10 @@ export default function GuidePage() {
             <div className="flex gap-3 rounded-xl border border-border bg-card p-4">
               <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
               <p className="text-sm">
-                Check questions are items with a known answer. They look exactly like normal items to evaluators. Correct answers raise an evaluator’s
-                reputation; wrong ones lower it, and evaluators with low reputation stop receiving work.
+                Check questions are items with a known answer. They look exactly like normal items to evaluators. New evaluators see more of them;
+                proven ones see fewer. Each evaluator’s recent accuracy on them decides how much their answers count, and evaluators who
+                fall below {MIN_REPUTATION}% stop receiving work. When answers on an item disagree, it gets extra answers up to your
+                maximum, and items still split at that point are marked disputed. Add at least 20 check questions, or 5% of your items.
               </p>
             </div>
             <p>
@@ -107,10 +109,11 @@ export default function GuidePage() {
             <p>Use <em>Export results</em> on a dataset page. Each row is one item:</p>
             <dl className="divide-y divide-border rounded-xl border border-border bg-card text-sm">
               {[
-                ['consensus_label', 'The majority answer, or empty if the top answers tied.'],
+                ['consensus_label', 'The agreed answer, or empty if the item is disputed.'],
                 ['agreement', 'Share of answers that matched the label, from 0 to 1.'],
+                ['confidence', 'Probability the label is right, weighting each answer by the evaluator’s accuracy, from 0 to 1.'],
                 ['votes_<option>', 'How many evaluators chose each option.'],
-                ['status', 'COMPLETED once the item has all its answers.'],
+                ['status', 'COMPLETED once answers agree, DISPUTED if they still disagree at the maximum, ACTIVE until then.'],
               ].map(([term, text]) => (
                 <div key={term} className="flex gap-4 px-4 py-3">
                   <dt className="w-36 shrink-0 font-mono text-[13px]">{term}</dt>

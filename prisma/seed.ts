@@ -71,7 +71,7 @@ async function main() {
       requiredVotes: 3,
       status: 'ACTIVE',
       ownerId: client.id,
-      tasks: { create: lights.map((url) => ({ content: url, imageUrls: [url] })) },
+      tasks: { create: lights.map((url) => ({ content: url, imageUrls: [url], targetVotes: 3 })) },
     },
   });
 

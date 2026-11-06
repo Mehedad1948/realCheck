@@ -53,7 +53,7 @@ export function WalletView() {
 
       <Section
         title="Performance"
-        footer={`Accuracy is measured on check questions with known answers. Below ${MIN_REPUTATION} reputation, new tasks pause.`}
+        footer={`Accuracy is measured on check questions with known answers. Reputation follows your recent accuracy; below ${MIN_REPUTATION}, new tasks pause.`}
       >
         <Row
           icon={

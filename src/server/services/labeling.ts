@@ -1,17 +1,18 @@
 import 'server-only';
 import {
-  GOLD_CORRECT_REPUTATION,
-  GOLD_WRONG_REPUTATION,
-  MIN_REPUTATION,
+  GOLD_MAX_EXPOSURES,
   TASK_BATCH_SIZE,
   TASK_CANDIDATE_POOL,
+  TASK_LEASE_MS,
+  TRUST_WINDOW,
 } from '@/lib/constants';
 import type { Earnings, EvaluatorProfile, TaskBatch, VoteResult } from '@/lib/api/types';
 import type { Evaluator } from '@/server/auth/tma';
 import { expireDataset } from '@/server/cache-invalidation';
 import { prisma } from '@/server/db';
 import { errors, isUniqueViolation } from '@/server/errors';
-import { computeConsensus } from './consensus';
+import { resolveTask } from './consensus';
+import { computeTrust, goldRate, isSuspended, sampleGoldCount, toReputation } from './trust';
 
 // The evaluator side of the marketplace: serving tasks and accepting votes.
 
@@ -36,7 +37,7 @@ export async function getEvaluatorProfile(evaluator: Evaluator): Promise<Evaluat
     ...user,
     tasksDone,
     accuracy: goldTotal > 0 ? goldCorrect / goldTotal : null,
-    canLabel: user.reputation >= MIN_REPUTATION,
+    canLabel: !isSuspended(evaluator),
   };
 }
 
@@ -86,8 +87,46 @@ const lowReputation = () =>
 const datasetUnavailable = () =>
   errors.conflict('DATASET_UNAVAILABLE', 'This dataset is not accepting answers right now.');
 
+type Candidate = { id: string; content: string; imageUrls: string[] };
+
+/**
+ * Regular tasks this evaluator may take: not answered by them, and with a free vote
+ * slot once other evaluators' live leases are counted. Fewest votes first, so every
+ * item gets covered before any item gets extra votes.
+ */
+function findOpenTasks(datasetId: string, userId: string, now: Date) {
+  return prisma.$queryRaw<Candidate[]>`
+    SELECT t.id, t.content, t."imageUrls"
+    FROM "Task" t
+    WHERE t."datasetId" = ${datasetId}
+      AND t.status = 'ACTIVE'
+      AND NOT t."isValidation"
+      AND NOT EXISTS (SELECT 1 FROM "Vote" v WHERE v."taskId" = t.id AND v."userId" = ${userId})
+      AND t."collectedVotes"
+        + (SELECT COUNT(*) FROM "TaskAssignment" a WHERE a."taskId" = t.id AND a."expiresAt" > ${now})
+        < t."targetVotes"
+    ORDER BY t."collectedVotes" ASC, t."createdAt" ASC
+    LIMIT ${TASK_CANDIDATE_POOL}`;
+}
+
+/** Golden tasks this evaluator hasn't seen, least exposed first. Over-exposed ones are retired. */
+function findGoldTasks(datasetId: string, userId: string) {
+  return prisma.task.findMany({
+    where: {
+      datasetId,
+      status: 'ACTIVE',
+      isValidation: true,
+      collectedVotes: { lt: GOLD_MAX_EXPOSURES },
+      votes: { none: { userId } },
+    },
+    orderBy: { collectedVotes: 'asc' },
+    take: TASK_CANDIDATE_POOL,
+    select: { id: true, content: true, imageUrls: true },
+  });
+}
+
 export async function getTaskBatch(evaluator: Evaluator, datasetId: string): Promise<TaskBatch> {
-  if (evaluator.reputation < MIN_REPUTATION) throw lowReputation();
+  if (isSuspended(evaluator)) throw lowReputation();
 
   const dataset = await prisma.dataset.findUnique({
     where: { id: datasetId },
@@ -100,40 +139,75 @@ export async function getTaskBatch(evaluator: Evaluator, datasetId: string): Pro
   const affordable = Math.floor(dataset.owner.balanceCents / dataset.rewardCents);
   if (affordable < 1) return { datasetId, tasks: [] };
 
-  const candidates = await prisma.task.findMany({
-    where: { datasetId, status: 'ACTIVE', votes: { none: { userId: evaluator.id } } },
-    orderBy: { collectedVotes: 'asc' },
-    take: TASK_CANDIDATE_POOL,
-    select: { id: true, content: true, imageUrls: true },
+  // A new batch replaces the previous one, so release its unanswered slots first.
+  await prisma.taskAssignment.deleteMany({ where: { userId: evaluator.id } });
+
+  const now = new Date();
+  const [open, gold] = await Promise.all([
+    findOpenTasks(datasetId, evaluator.id, now),
+    findGoldTasks(datasetId, evaluator.id),
+  ]);
+
+  // Golden tasks are mixed in at a rate set by the evaluator's standing. They never
+  // fill a batch on their own: with no real work left, there is nothing to check.
+  const slots = Math.min(TASK_BATCH_SIZE, affordable);
+  const rate = goldRate(evaluator);
+  let goldCount = sampleGoldCount(slots, rate);
+  const real = shuffle(open).slice(0, slots - goldCount);
+  if (real.length === 0) return { datasetId, tasks: [] };
+  if (real.length < slots - goldCount) goldCount = sampleGoldCount(real.length, rate);
+  const picked = shuffle([...real, ...shuffle(gold).slice(0, goldCount)]);
+
+  await prisma.taskAssignment.createMany({
+    data: picked.map((task) => ({
+      taskId: task.id,
+      userId: evaluator.id,
+      createdAt: now,
+      expiresAt: new Date(now.getTime() + TASK_LEASE_MS),
+    })),
+    skipDuplicates: true,
   });
 
-  const tasks = shuffle(candidates)
-    .slice(0, Math.min(TASK_BATCH_SIZE, affordable))
-    .map((task) => ({
+  return {
+    datasetId,
+    tasks: picked.map((task) => ({
       id: task.id,
       content: task.content,
       imageUrls: dataset.dataType === 'IMAGE' && task.imageUrls.length === 0 ? [task.content] : task.imageUrls,
-    }));
-
-  return { datasetId, tasks };
+    })),
+  };
 }
 
 class OwnerOutOfFunds extends Error {}
 
 export async function submitVote(evaluator: Evaluator, taskId: string, selection: string): Promise<VoteResult> {
-  if (evaluator.reputation < MIN_REPUTATION) throw lowReputation();
+  if (isSuspended(evaluator)) throw lowReputation();
 
-  const [task, existingVote] = await Promise.all([
+  const [task, existingVote, assignment, previousVote] = await Promise.all([
     prisma.task.findUnique({
       where: { id: taskId },
       select: { datasetId: true, dataset: { select: { ownerId: true } } },
     }),
     prisma.vote.findUnique({ where: { userId_taskId: { userId: evaluator.id, taskId } }, select: { id: true } }),
+    prisma.taskAssignment.findUnique({
+      where: { taskId_userId: { taskId, userId: evaluator.id } },
+      select: { createdAt: true },
+    }),
+    prisma.vote.findFirst({
+      where: { userId: evaluator.id },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    }),
   ]);
   if (!task) throw errors.notFound('Task not found.');
   // Fast path for the common retry case. The unique index below still guards races.
   if (existingVote) throw errors.conflict('ALREADY_ANSWERED', 'You already answered this task.');
   const scope = { datasetId: task.datasetId, ownerId: task.dataset.ownerId };
+
+  // Tasks in a batch are answered one after another, so time on this task is
+  // measured from whichever came last: being served it, or the previous answer.
+  const startedAt = Math.max(assignment?.createdAt.getTime() ?? 0, previousVote?.createdAt.getTime() ?? 0);
+  const responseMs = startedAt > 0 ? Math.min(Date.now() - startedAt, 2 ** 31 - 1) : null;
 
   try {
     const outcome = await prisma.$transaction(async (tx) => {
@@ -144,7 +218,8 @@ export async function submitVote(evaluator: Evaluator, taskId: string, selection
           status: true,
           isValidation: true,
           correctAnswer: true,
-          dataset: { select: { status: true, options: true, rewardCents: true, requiredVotes: true } },
+          targetVotes: true,
+          dataset: { select: { status: true, options: true, rewardCents: true, maxVotes: true } },
         },
       });
       const { dataset } = current;
@@ -152,12 +227,12 @@ export async function submitVote(evaluator: Evaluator, taskId: string, selection
       if (!dataset.options.includes(selection)) throw errors.validation('That answer is not one of the options.');
 
       // Claim a vote slot. The conditional update is atomic, so concurrent voters
-      // can never push a task past its required votes. Golden tasks never fill up.
+      // can never push a task past its target votes. Golden tasks never fill up.
       const claimed = await tx.task.updateMany({
         where: {
           id: taskId,
           status: 'ACTIVE',
-          ...(current.isValidation ? {} : { collectedVotes: { lt: dataset.requiredVotes } }),
+          ...(current.isValidation ? {} : { collectedVotes: { lt: current.targetVotes } }),
         },
         data: { collectedVotes: { increment: 1 } },
       });
@@ -165,14 +240,13 @@ export async function submitVote(evaluator: Evaluator, taskId: string, selection
 
       const isCorrect = current.isValidation ? selection === current.correctAnswer : null;
       const rewardCents = isCorrect === false ? 0 : dataset.rewardCents;
-      const reputationDelta =
-        isCorrect === null ? 0 : isCorrect ? GOLD_CORRECT_REPUTATION : GOLD_WRONG_REPUTATION;
 
       // Unique on (userId, taskId): a second answer fails with P2002.
       const vote = await tx.vote.create({
-        data: { userId: evaluator.id, taskId, selection, isCorrect, rewardCents },
+        data: { userId: evaluator.id, taskId, selection, isCorrect, rewardCents, responseMs },
         select: { id: true },
       });
+      await tx.taskAssignment.deleteMany({ where: { taskId, userId: evaluator.id } });
 
       if (rewardCents > 0) {
         // Debit the owner only if they can afford it. Never goes negative.
@@ -190,49 +264,37 @@ export async function submitVote(evaluator: Evaluator, taskId: string, selection
         });
       }
 
+      let standing = {};
+      if (isCorrect !== null) {
+        const recent = await tx.vote.findMany({
+          where: { userId: evaluator.id, isCorrect: { not: null } },
+          orderBy: { createdAt: 'desc' },
+          take: TRUST_WINDOW,
+          select: { isCorrect: true },
+        });
+        const trust = computeTrust(recent.filter((v) => v.isCorrect).length, recent.length);
+        standing = {
+          trust,
+          reputation: toReputation(trust),
+          goldAnswered: { increment: 1 },
+          lastGoldCorrect: isCorrect,
+        };
+      }
+
       const worker = await tx.user.update({
         where: { id: evaluator.id },
-        data: {
-          balanceCents: { increment: rewardCents },
-          reputation: { increment: reputationDelta },
-          lastSeenAt: new Date(),
-        },
+        data: { balanceCents: { increment: rewardCents }, lastSeenAt: new Date(), ...standing },
         select: { balanceCents: true },
       });
 
-      let datasetChanged = false;
-      if (!current.isValidation) {
-        const { collectedVotes } = await tx.task.findUniqueOrThrow({
-          where: { id: taskId },
-          select: { collectedVotes: true },
-        });
-        if (collectedVotes >= dataset.requiredVotes) {
-          const tally = await tx.vote.groupBy({ by: ['selection'], where: { taskId }, _count: { _all: true } });
-          const consensus = computeConsensus(tally.map((row) => ({ selection: row.selection, votes: row._count._all })));
-          await tx.task.update({
-            where: { id: taskId },
-            data: {
-              status: 'COMPLETED',
-              consensusLabel: consensus.label,
-              agreement: consensus.agreement,
-              completedAt: new Date(),
-            },
-          });
-          datasetChanged = true;
-
-          const remaining = await tx.task.count({
-            where: { datasetId: scope.datasetId, status: 'ACTIVE', isValidation: false },
-          });
-          if (remaining === 0) {
-            await tx.dataset.update({ where: { id: scope.datasetId }, data: { status: 'COMPLETED' } });
-          }
-        }
-      }
+      const datasetChanged = current.isValidation
+        ? false
+        : await resolveIfFull(tx, taskId, scope.datasetId, dataset, current.targetVotes);
 
       return { result: { taskId, rewardCents, balanceCents: worker.balanceCents }, datasetChanged };
     });
 
-    // Progress shown to the owner and the public list only change when a task completes,
+    // Progress shown to the owner and the public list only change when a task resolves,
     // not on every vote, which keeps cache churn low under heavy labeling.
     if (outcome.datasetChanged) expireDataset(scope, 'background');
     return outcome.result;
@@ -248,4 +310,59 @@ export async function submitVote(evaluator: Evaluator, taskId: string, selection
     }
     throw error;
   }
+}
+
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/**
+ * Once a task has its target votes: resolve it, ask for more votes, or mark it disputed.
+ * Votes are weighted by each voter's current trust, so an evaluator who later turns out
+ * to be unreliable counts for less on tasks that are still open.
+ * Returns whether the owner-visible progress changed.
+ */
+async function resolveIfFull(
+  tx: Tx,
+  taskId: string,
+  datasetId: string,
+  dataset: { options: string[]; maxVotes: number },
+  targetVotes: number,
+) {
+  const { collectedVotes } = await tx.task.findUniqueOrThrow({ where: { id: taskId }, select: { collectedVotes: true } });
+  if (collectedVotes < targetVotes) return false;
+
+  const votes = await tx.vote.findMany({ where: { taskId }, select: { selection: true, user: { select: { trust: true } } } });
+  const resolution = resolveTask(
+    votes.map((vote) => ({ selection: vote.selection, trust: vote.user.trust })),
+    dataset.options,
+    { targetVotes, maxVotes: dataset.maxVotes },
+  );
+
+  if (resolution.kind === 'escalate') {
+    await tx.task.update({ where: { id: taskId }, data: { targetVotes: resolution.targetVotes } });
+    return false;
+  }
+
+  await tx.task.update({
+    where: { id: taskId },
+    data:
+      resolution.kind === 'resolved'
+        ? {
+            status: 'COMPLETED',
+            consensusLabel: resolution.label,
+            agreement: resolution.agreement,
+            confidence: resolution.confidence,
+            completedAt: new Date(),
+          }
+        : {
+            status: 'DISPUTED',
+            consensusLabel: null,
+            agreement: resolution.agreement,
+            confidence: resolution.confidence,
+            completedAt: new Date(),
+          },
+  });
+
+  const remaining = await tx.task.count({ where: { datasetId, status: 'ACTIVE', isValidation: false } });
+  if (remaining === 0) await tx.dataset.update({ where: { id: datasetId }, data: { status: 'COMPLETED' } });
+  return true;
 }

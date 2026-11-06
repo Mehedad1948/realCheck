@@ -51,7 +51,14 @@ function profileFields(user: TelegramUser) {
   };
 }
 
-const evaluatorSelect = { id: true, role: true, reputation: true, balanceCents: true } as const;
+const evaluatorSelect = {
+  id: true,
+  role: true,
+  balanceCents: true,
+  trust: true,
+  goldAnswered: true,
+  lastGoldCorrect: true,
+} as const;
 
 /** Finds the evaluator for this Telegram user, creating the account on first contact. */
 async function findOrCreateEvaluator(user: TelegramUser, { refreshProfile }: { refreshProfile: boolean }) {

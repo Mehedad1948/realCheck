@@ -13,9 +13,16 @@ const HISTORY_ANSWERS = 100;
 
 /** Unanswered active tasks per open dataset, for this evaluator. */
 export async function getOpenTaskCounts(evaluator: Evaluator): Promise<OpenTaskCounts> {
+  // Only regular tasks with a free slot: golden tasks never complete and would keep every dataset looking unfinished.
   const rows = await prisma.task.groupBy({
     by: ['datasetId'],
-    where: { status: 'ACTIVE', dataset: { status: 'ACTIVE' }, votes: { none: { userId: evaluator.id } } },
+    where: {
+      status: 'ACTIVE',
+      isValidation: false,
+      collectedVotes: { lt: prisma.task.fields.targetVotes },
+      dataset: { status: 'ACTIVE' },
+      votes: { none: { userId: evaluator.id } },
+    },
     _count: { _all: true },
   });
   return { remaining: Object.fromEntries(rows.map((row) => [row.datasetId, row._count._all])) };
@@ -64,7 +71,14 @@ export async function getEvaluatorDatasetHistory(evaluator: Evaluator, datasetId
     summaries(evaluator.id, datasetId),
     prisma.dataset.findUnique({ where: { id: datasetId }, select: { question: true } }),
     prisma.task.count({
-      where: { datasetId, status: 'ACTIVE', dataset: { status: 'ACTIVE' }, votes: { none: { userId: evaluator.id } } },
+      where: {
+        datasetId,
+        status: 'ACTIVE',
+        isValidation: false,
+        collectedVotes: { lt: prisma.task.fields.targetVotes },
+        dataset: { status: 'ACTIVE' },
+        votes: { none: { userId: evaluator.id } },
+      },
     }),
     prisma.vote.findMany({
       where: { userId: evaluator.id, task: { datasetId } },
@@ -82,7 +96,8 @@ export async function getEvaluatorDatasetHistory(evaluator: Evaluator, datasetId
   if (!summary || !dataset) throw errors.notFound('No answers in this dataset yet.');
 
   const answers = votes.map(({ selection, createdAt, task }): HistoryAnswer => {
-    const resolved = !task.isValidation && task.status === 'COMPLETED';
+    // Disputed tasks have no label, so they read like a tie.
+    const resolved = !task.isValidation && task.status !== 'ACTIVE';
     const outcome = !resolved
       ? 'pending'
       : task.consensusLabel === null
