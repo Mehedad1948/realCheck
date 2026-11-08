@@ -34,9 +34,10 @@ function Earned({ cents }: { cents: number }) {
 }
 
 function DatasetRow({ dataset }: { dataset: HistoryDataset }) {
+  const { basePath } = useTelegram();
   return (
     <Row
-      href={`/app/history/${dataset.id}`}
+      href={`${basePath}/history/${dataset.id}`}
       icon={<IconTile>{dataset.dataType === 'IMAGE' ? <ImageIcon /> : <FileText />}</IconTile>}
       title={dataset.title}
       subtitle={summaryLine(dataset)}
@@ -92,11 +93,11 @@ export function HistoryList() {
   );
 }
 
-/** `/app/history/[datasetId]`: the evaluator's answers in one dataset and how they turned out. */
+/** `history/[datasetId]`: the evaluator's answers in one dataset and how they turned out. */
 export function DatasetHistoryView({ datasetId }: { datasetId: string }) {
-  const { status } = useTelegram();
+  const { status, basePath } = useTelegram();
   const history = useDatasetHistory(datasetId);
-  useBackTo('/app/history');
+  useBackTo(`${basePath}/history`);
 
   if (status === 'browser') return <OpenInTelegram />;
   if (history.isError) {
@@ -124,6 +125,7 @@ export function DatasetHistoryView({ datasetId }: { datasetId: string }) {
 }
 
 function DatasetHistoryContent({ history: { dataset, answers } }: { history: DatasetHistory }) {
+  const { basePath } = useTelegram();
   const canContinue = dataset.status === 'ACTIVE' && dataset.remaining > 0;
 
   return (
@@ -149,7 +151,7 @@ function DatasetHistoryContent({ history: { dataset, answers } }: { history: Dat
 
       {canContinue && (
         <Link
-          href={`/app/tasks/${dataset.id}`}
+          href={`${basePath}/tasks/${dataset.id}`}
           className="mt-4 flex h-12 items-center justify-center rounded-full bg-foreground text-[15px] font-medium text-background transition-transform active:scale-[0.985]"
         >
           Continue labeling · {dataset.remaining} left

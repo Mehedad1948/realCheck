@@ -4,6 +4,7 @@ import { FileText, Image as ImageIcon, Inbox } from 'lucide-react';
 import type { OpenDataset } from '@/lib/api/types';
 import { formatMoney } from '@/lib/money';
 import { useOpenDatasets, useOpenTaskCounts } from './queries';
+import { useTelegram } from './telegram-provider';
 import { IconTile, Money, Row, Section } from './ui';
 
 /**
@@ -14,6 +15,7 @@ import { IconTile, Money, Row, Section } from './ui';
 export function OpenDatasetList({ initialData }: { initialData: OpenDataset[] }) {
   const { data: open = initialData } = useOpenDatasets(initialData);
   const counts = useOpenTaskCounts();
+  const { basePath } = useTelegram();
   const remaining = counts.data?.remaining;
   const data = remaining
     ? open.flatMap((dataset) => (remaining[dataset.id] ? [{ ...dataset, openTasks: remaining[dataset.id] }] : []))
@@ -46,7 +48,7 @@ export function OpenDatasetList({ initialData }: { initialData: OpenDataset[] })
       {data.map((dataset) => (
         <Row
           key={dataset.id}
-          href={`/app/tasks/${dataset.id}`}
+          href={`${basePath}/tasks/${dataset.id}`}
           chevron={false}
           icon={<IconTile>{dataset.dataType === 'IMAGE' ? <ImageIcon /> : <FileText />}</IconTile>}
           title={dataset.title}

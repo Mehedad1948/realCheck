@@ -30,7 +30,8 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
 /** For pages: sends anyone who isn't a client to the login page. */
 export async function requireClientPage(): Promise<Viewer> {
   const viewer = await getViewer();
-  if (!viewer || viewer.role !== 'CLIENT') redirect('/login');
+  // A stale cookie would pass the proxy and loop; clear it on the way to /login.
+  if (!viewer || viewer.role !== 'CLIENT') redirect('/api/auth/signed-out');
   return viewer;
 }
 
@@ -40,4 +41,26 @@ export async function requireClient(): Promise<Viewer> {
   if (!viewer) throw errors.unauthorized();
   if (viewer.role !== 'CLIENT') throw errors.forbidden('Only client accounts can manage datasets.');
   return viewer;
+}
+
+export type EvaluatorViewer = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  username: string | null;
+  photoUrl: string | null;
+};
+
+/** For the website's evaluator pages (/earn): sends anyone who isn't an evaluator to Telegram sign-in. */
+export async function requireEvaluatorPage(): Promise<EvaluatorViewer> {
+  const session = await readSession();
+  const evaluator =
+    session?.role === 'EVALUATOR'
+      ? await prisma.user.findUnique({
+          where: { id: session.userId },
+          select: { id: true, role: true, firstName: true, lastName: true, username: true, photoUrl: true },
+        })
+      : null;
+  if (!evaluator || evaluator.role !== 'EVALUATOR') redirect('/api/auth/signed-out?to=earn');
+  return { id: evaluator.id, firstName: evaluator.firstName, lastName: evaluator.lastName, username: evaluator.username, photoUrl: evaluator.photoUrl };
 }

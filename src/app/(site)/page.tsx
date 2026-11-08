@@ -65,7 +65,7 @@ export default function LandingPage() {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <a href="#earn" className="text-sm font-medium text-foreground/85 transition-colors hover:text-foreground">
-              Earn on Telegram →
+              Start earning →
             </a>
           </div>
         </div>
@@ -108,11 +108,9 @@ export default function LandingPage() {
             >
               Create a free account <ArrowRight className="h-4 w-4" />
             </Link>
-            {telegramUrl && (
-              <a href={telegramUrl} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                Or earn on Telegram →
-              </a>
-            )}
+            <Link href="/earn" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              Or start earning →
+            </Link>
           </div>
         </section>
       </main>

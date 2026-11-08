@@ -5,12 +5,22 @@ import { SESSION_COOKIE, verifySessionToken } from '@/server/auth/session-token'
 // don't see a flash of the dashboard. Real authorization happens in
 // `src/server/auth/dal.ts`, which every page, action and route handler calls.
 // The Mini App (/app) and the API are not matched: they authenticate per request.
+// Clients work in /dashboard, evaluators who label on the website in /earn.
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const session = token ? await verifySessionToken(token) : null;
   const isClient = session?.role === 'CLIENT';
+  const isEvaluator = session?.role === 'EVALUATOR';
+
+  // The evaluator workspace on the website. Its sign-in page is the only part open to everyone.
+  if (pathname === '/earn/login') {
+    return isEvaluator ? NextResponse.redirect(new URL('/earn', request.url)) : NextResponse.next();
+  }
+  if (pathname === '/earn' || pathname.startsWith('/earn/')) {
+    return isEvaluator ? NextResponse.next() : NextResponse.redirect(new URL('/earn/login', request.url));
+  }
 
   if (pathname.startsWith('/dashboard') && !isClient) {
     const login = new URL('/login', request.url);
@@ -26,5 +36,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/register'],
+  matcher: ['/dashboard/:path*', '/earn/:path*', '/earn', '/login', '/register'],
 };

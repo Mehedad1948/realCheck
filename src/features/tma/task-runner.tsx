@@ -19,9 +19,9 @@ import { useSwipe } from './use-swipe';
 
 export function TaskRunner({ dataset }: { dataset: PublicDataset }) {
   const router = useRouter();
-  const { status } = useTelegram();
+  const { status, basePath } = useTelegram();
   const batch = useTaskBatch(dataset.id);
-  const goHome = useCallback(() => router.push('/app'), [router]);
+  const goHome = useCallback(() => router.push(basePath), [router, basePath]);
   const { refetch } = batch;
   const nextBatch = useCallback(() => void refetch(), [refetch]);
   useBackButton(goHome);
@@ -44,7 +44,7 @@ export function TaskRunner({ dataset }: { dataset: PublicDataset }) {
         title="You’re all caught up"
         description="You’ve answered everything available in this dataset. Try another one."
         primary={{ label: 'Browse tasks', onClick: goHome }}
-        secondary={{ label: 'See your answers', onClick: () => router.push(`/app/history/${dataset.id}`) }}
+        secondary={{ label: 'See your answers', onClick: () => router.push(`${basePath}/history/${dataset.id}`) }}
       />
     );
   } else {
@@ -62,10 +62,16 @@ export function TaskRunner({ dataset }: { dataset: PublicDataset }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-[var(--tg-viewport-stable-height,100dvh)] w-full max-w-lg flex-col px-4 pt-3 pb-6">
+    <div
+      className={cn(
+        'mx-auto flex w-full max-w-lg flex-col px-4 pt-3 pb-6',
+        // On the website the runner sits below the dashboard's header rather than filling Telegram's viewport.
+        status === 'web' ? 'min-h-[calc(100dvh-10rem)]' : 'min-h-[var(--tg-viewport-stable-height,100dvh)]',
+      )}
+    >
       {status !== 'telegram' && (
         <Link
-          href="/app"
+          href={basePath}
           aria-label="Close"
           className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-card text-muted-foreground ring-1 ring-border ring-inset"
         >
@@ -93,6 +99,7 @@ function BatchSession({
   isLoadingNext: boolean;
 }) {
   const { tasks } = batch;
+  const { status } = useTelegram();
   const vote = useSubmitVote();
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
@@ -260,6 +267,11 @@ function BatchSession({
               );
             })}
           </div>
+          {status === 'web' && (
+            <p className="mt-3 hidden items-center justify-center gap-1.5 text-[12px] text-muted-foreground sm:flex">
+              Press <Kbd>1</Kbd>–<Kbd>{dataset.options.length}</Kbd> to answer, <Kbd>←</Kbd> <Kbd>→</Kbd> to move
+            </p>
+          )}
         </div>
       </div>
 
@@ -290,6 +302,10 @@ function BatchSession({
       </footer>
     </div>
   );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return <kbd className="rounded-md border border-border bg-card px-1.5 py-0.5 font-mono text-[11px] text-foreground">{children}</kbd>;
 }
 
 function ProgressHeader({
@@ -444,6 +460,7 @@ function RunnerSkeleton() {
 
 function BatchError({ error, onRetry }: { error: Error; onRetry: () => void }) {
   const router = useRouter();
+  const { basePath } = useTelegram();
   const status = error instanceof ApiError ? error.status : 0;
   const retryable = status >= 500 || status === 0;
   return (
@@ -451,7 +468,7 @@ function BatchError({ error, onRetry }: { error: Error; onRetry: () => void }) {
       tone="neutral"
       title={status === 409 ? 'Not available right now' : status === 403 ? 'Tasks paused' : 'Couldn’t load tasks'}
       description={error.message}
-      primary={retryable ? { label: 'Try again', onClick: onRetry } : { label: 'Browse tasks', onClick: () => router.push('/app') }}
+      primary={retryable ? { label: 'Try again', onClick: onRetry } : { label: 'Browse tasks', onClick: () => router.push(basePath) }}
     />
   );
 }

@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=block" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'Roboto Flex';
+    src: url('../../../src/fonts/roboto-flex-latin.woff2') format('woff2');
+    font-weight: 100 1000;
+    font-stretch: 25% 151%;
+  }
+  html, body { margin: 0; width: 1024px; height: 1024px; background: #07071a; overflow: hidden; }
+  .tile {
+    position: relative; width: 1024px; height: 1024px; overflow: hidden;
+    background: url('../silk-dark.webp') center 42% / 100% auto no-repeat, #07071a;
+    display: grid; place-items: center;
+  }
+  .tile::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(6,6,22,.55), rgba(6,6,22,0) 60%),
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(3,3,12,.6) 100%);
+  }
+  .mark { position: relative; z-index: 2; display: flex; align-items: baseline; line-height: .8; }
+  .r {
+    font-family: 'Instrument Serif', serif; font-style: italic;
+    font-size: 760px; letter-spacing: -.04em; padding: 0 .14em 0 .06em; margin: 0 -.14em 0 -.06em;
+    background: linear-gradient(170deg, #ffffff 15%, #d6d0ff 55%, #8a80ff 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 14px 60px rgba(110,96,255,.5));
+  }
+  .c {
+    font-family: 'Roboto Flex'; font-weight: 900; font-stretch: 130%;
+    font-size: 400px; letter-spacing: -.04em; color: #f4f2ff; margin-left: -60px;
+    filter: drop-shadow(0 10px 40px rgba(20,14,80,.85));
+  }
+  /* variant 2: single R with a check */
+  .solo .c { display: none; } .solo .mark { transform: translateX(-60px); }
+  .tick { position: absolute; z-index: 3; }
+</style>
+</head>
+<body>
+  <div class="tile" id="t">
+    <div class="mark"><span class="r">R</span><span class="c">c</span></div>
+  </div>
+  <script>
+    if (location.hash === '#solo') {
+      const t = document.getElementById('t');
+      t.classList.add('solo');
+      t.insertAdjacentHTML('beforeend', `
+        <svg class="tick" viewBox="0 0 1024 1024" width="1024" height="1024" style="inset:0">
+          <defs><linearGradient id="g" x1="0" x2="1" y1="1" y2="0">
+            <stop offset="0" stop-color="#cfc8ff"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
+          <path d="M556 742 L 610 796 L 812 520" stroke="url(#g)" stroke-width="30" fill="none"
+            stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 8px 30px rgba(110,96,255,.7))"/>
+        </svg>`);
+    }
+  </script>
+</body>
+</html>

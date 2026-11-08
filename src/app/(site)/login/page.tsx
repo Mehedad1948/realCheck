@@ -17,6 +17,12 @@ export default function LoginPage() {
           <Link href="/register" className="font-medium text-foreground underline-offset-4 hover:underline">
             Create an account
           </Link>
+          <span className="mt-2 block">
+            Here to label?{' '}
+            <Link href="/earn/login" className="font-medium text-foreground underline-offset-4 hover:underline">
+              Sign in with Telegram
+            </Link>
+          </span>
         </>
       }
     >

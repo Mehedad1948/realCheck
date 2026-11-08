@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { LOGO_PATH } from '@/components/site/logo';
 
 // 180×180 PNG icon wallets show next to "RealCheck" when connecting.
 export function GET() {
@@ -12,13 +13,11 @@ export function GET() {
           alignItems: 'center',
           justifyContent: 'center',
           background: '#0b0b0f',
-          color: '#ffffff',
-          fontSize: 112,
-          fontWeight: 700,
-          letterSpacing: -6,
         }}
       >
-        R
+        <svg width={104} height={120} viewBox="0 0 1300 1497">
+          <path d={LOGO_PATH} fill="#5E5BEA" />
+        </svg>
       </div>
     ),
     { width: 180, height: 180 },

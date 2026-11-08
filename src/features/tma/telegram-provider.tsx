@@ -11,8 +11,9 @@ import { DATASET_START_PARAM } from '@/lib/telegram';
  * - `telegram`: running inside Telegram with signed launch data
  * - `dev`: plain browser with NEXT_PUBLIC_TMA_DEV_MOCK=true (the server accepts a mock user)
  * - `browser`: plain browser; only public content works
+ * - `web`: the website's evaluator workspace (/earn), signed in with Telegram; the session cookie authenticates
  */
-export type TelegramStatus = 'pending' | 'telegram' | 'dev' | 'browser';
+export type TelegramStatus = 'pending' | 'telegram' | 'dev' | 'browser' | 'web';
 
 type TelegramContextValue = {
   status: TelegramStatus;
@@ -20,13 +21,18 @@ type TelegramContextValue = {
   user: WebAppUser | null;
   /** True once API calls can be authenticated. */
   canAuthenticate: boolean;
+  /** Where the evaluator screens live: /app in the Mini App, /earn on the website. */
+  basePath: string;
 };
+
+const MINI_APP_PATH = '/app';
 
 const TelegramContext = createContext<TelegramContextValue>({
   status: 'pending',
   webApp: null,
   user: null,
   canAuthenticate: false,
+  basePath: MINI_APP_PATH,
 });
 
 const DEV_MOCK = process.env.NEXT_PUBLIC_TMA_DEV_MOCK === 'true' && process.env.NODE_ENV !== 'production';
@@ -60,6 +66,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     webApp: null,
     user: null,
     canAuthenticate: false,
+    basePath: MINI_APP_PATH,
   });
 
   useEffect(() => {
@@ -87,12 +94,12 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         webApp.onEvent('themeChanged', onTheme);
         cleanup = () => webApp.offEvent('themeChanged', onTheme);
 
-        setValue({ status: 'telegram', webApp, user: webApp.initDataUnsafe.user ?? null, canAuthenticate: true });
+        setValue({ status: 'telegram', webApp, user: webApp.initDataUnsafe.user ?? null, canAuthenticate: true, basePath: MINI_APP_PATH });
 
         const match = DATASET_START_PARAM.exec(webApp.initDataUnsafe.start_param ?? '');
         if (match && !handledStartParam) {
           handledStartParam = true;
-          router.replace(`/app/tasks/${match[1]}`);
+          router.replace(`${MINI_APP_PATH}/tasks/${match[1]}`);
         }
         return;
       }
@@ -106,9 +113,9 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
 
       if (DEV_MOCK) {
         setApiAuthorization(() => 'tma dev');
-        setValue({ status: 'dev', webApp: null, user: null, canAuthenticate: true });
+        setValue({ status: 'dev', webApp: null, user: null, canAuthenticate: true, basePath: MINI_APP_PATH });
       } else {
-        setValue({ status: 'browser', webApp: null, user: null, canAuthenticate: false });
+        setValue({ status: 'browser', webApp: null, user: null, canAuthenticate: false, basePath: MINI_APP_PATH });
       }
     };
 
@@ -120,6 +127,17 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   return <TelegramContext.Provider value={value}>{children}</TelegramContext.Provider>;
+}
+
+const WEB_VALUE: TelegramContextValue = { status: 'web', webApp: null, user: null, canAuthenticate: true, basePath: '/earn' };
+
+/**
+ * Lets the Mini App's screens run on the website. The page is already signed in (the session cookie
+ * goes with every API call), and Telegram's native controls fall back to in-page ones as they do in
+ * a plain browser. The theme stays with the website's toggle.
+ */
+export function WebEvaluatorProvider({ children }: { children: ReactNode }) {
+  return <TelegramContext.Provider value={WEB_VALUE}>{children}</TelegramContext.Provider>;
 }
 
 export function useTelegram() {

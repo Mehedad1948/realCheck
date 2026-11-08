@@ -1,17 +1,14 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
+// Same shape as public/logo-svg.svg; exported so image routes can draw the mark too.
+export const LOGO_PATH =
+  'M768.42 1046.16L1297.19 519.898L1300 1122.68L649.519 1497L0 1122.53L0.369717 374.102L650.481 0L1173.63 302.239L769.825 705.397L621.125 559.97L450.907 728.908L768.42 1046.16Z';
+
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={cn('h-8 w-8', className)}>
-      <defs>
-        <linearGradient id="rc-mark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#818cf8" />
-          <stop offset="1" stopColor="#4f46e5" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="9" fill="url(#rc-mark)" />
-      <path d="M9.5 16.5l4.2 4.2L22.5 11.5" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 1300 1497" aria-hidden className={cn('h-8 w-auto', className)}>
+      <path d={LOGO_PATH} fill="#5E5BEA" />
     </svg>
   );
 }

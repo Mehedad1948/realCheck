@@ -34,7 +34,7 @@ export function HomeHeader() {
 }
 
 export function HomeSummary() {
-  const { status } = useTelegram();
+  const { status, basePath } = useTelegram();
   const me = useMe();
 
   if (status === 'browser') return <OpenInTelegram />;
@@ -59,7 +59,7 @@ export function HomeSummary() {
 
   return (
     <div className="space-y-3">
-      <Link href="/app/wallet" className="block transition-transform duration-200 active:scale-[0.985]">
+      <Link href={`${basePath}/wallet`} className="block transition-transform duration-200 active:scale-[0.985]">
         <SilkCard className="p-6">
           <div className="flex items-center justify-between">
             <span className="text-[13px] text-white/60">Balance</span>

@@ -1,4 +1,4 @@
-import { ArrowDown, FileSpreadsheet, Send } from 'lucide-react';
+import { ArrowDown, FileSpreadsheet, MousePointerClick } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { SectionHeading } from './section-heading';
 
@@ -16,7 +16,7 @@ export function TwoSides() {
   return (
     <div className="flex flex-col gap-14 md:gap-16">
       <SectionHeading eyebrow="How it works" title="Two sides of every label." muted="One check in the middle.">
-        Teams ask. Telegram users answer. Only agreed answers are kept.
+        Teams ask. Evaluators answer, on the web or in Telegram. Only agreed answers are kept.
       </SectionHeading>
 
       <div className="grid items-stretch gap-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)_minmax(0,1fr)]">
@@ -41,10 +41,10 @@ export function TwoSides() {
 
         <SideCard
           href="#earn"
-          icon={<Send />}
-          eyebrow="For Telegram users"
+          icon={<MousePointerClick />}
+          eyebrow="For evaluators"
           title="You have spare minutes."
-          text="Answer in Telegram, earn USDT."
+          text="Answer on the web or in Telegram, earn USDT."
           cta="Start earning"
           tone={ANSWER}
         />

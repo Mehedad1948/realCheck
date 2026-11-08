@@ -1,6 +1,7 @@
 'use client';
 
-import { useId, useState, type CSSProperties } from 'react';
+import { useId, useState } from 'react';
+import ElasticSlider from '@/components/ui/elastic-slider';
 import { PLATFORM_FEE_BPS } from '@/lib/constants';
 import { chargePerAnswerCents, formatMoney } from '@/lib/money';
 
@@ -72,26 +73,32 @@ function Slider({
   onChange: (value: number) => void;
 }) {
   const id = useId();
-  const fill = ((current - min) / (max - min)) * 100;
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <label htmlFor={id} className="text-base text-foreground/80">
+        <span id={id} className="text-base text-foreground/80">
           {label}
-        </label>
+        </span>
         <span className="font-mono text-base font-medium tabular-nums">{value}</span>
       </div>
-      <input
-        id={id}
-        type="range"
-        min={min}
-        max={max}
-        step={step}
+      <ElasticSlider
         value={current}
-        aria-valuetext={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        style={{ '--fill': `${fill}%` } as CSSProperties}
-        className="estimator-range mt-3 w-full"
+        startingValue={min}
+        maxValue={max}
+        isStepped
+        stepSize={step}
+        onChange={onChange}
+        formatValue={() => value}
+        valuePosition="none"
+        thumb
+        thickness={4}
+        activeThickness={8}
+        maxStretch={30}
+        restOpacity={0.85}
+        trackColor="var(--border)"
+        rangeColor="var(--primary)"
+        ariaLabel={label}
+        className="mt-2"
       />
     </div>
   );

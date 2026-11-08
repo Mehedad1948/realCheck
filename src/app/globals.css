@@ -6,7 +6,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --font-sans: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -197,6 +197,24 @@ html[data-intro='play'] .landing-intro {
 @keyframes rc-rise { from { opacity: 0; transform: translateY(14px); filter: blur(8px); } }
 @media (prefers-reduced-motion: reduce) {
   .landing-rise { animation: none; }
+}
+
+/* Sign-in and sign-up pages. The entrance skips rc-rise's blur filter, which phones repaint per frame. */
+.auth-rise {
+  animation: rc-auth-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--rise-delay, 0s);
+}
+@keyframes rc-auth-rise { from { opacity: 0; transform: translateY(12px); } }
+/* The form card is frosted only where the live silk runs. On phones it sits over a still image, where
+   the near-opaque card looks the same without re-blurring the fixed background on every scroll frame. */
+@media (min-width: 768px) and (pointer: fine) {
+  .auth-card {
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-rise { animation: none; }
 }
 
 /* Landing silk panel: the silk starts inside a rounded box below the nav and opens to full bleed over
@@ -404,70 +422,57 @@ html[data-intro='play'] .landing-intro {
 /* Entrances keyed off <Reveal>: hidden until it scrolls into view, then played in --beat order.
    Only when scripts run, so the content is never stuck hidden without them. */
 .reveal-pop,
-.reveal-settle,
-.rep-needle,
-.rep-from,
-.rep-to {
+.reveal-settle {
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 .reveal-pop { transition-property: opacity, transform; transition-duration: 450ms; transition-delay: calc(var(--beat, 0) * 140ms + 200ms); }
 .reveal-settle { transition-property: opacity, filter, transform; transition-duration: 700ms; transition-delay: calc(var(--beat, 0) * 140ms + 300ms); }
-.rep-needle { left: var(--rep-to); transition: left 1.8s cubic-bezier(0.65, 0, 0.35, 1) 400ms; }
-.rep-from { transition: opacity 400ms ease 1.6s; opacity: 0; }
-.rep-to { transition: opacity 400ms ease 1.6s; }
 @media (scripting: enabled) {
   [data-reveal]:not([data-shown]) .reveal-pop { opacity: 0; transform: scale(0.3); }
   [data-reveal]:not([data-shown]) .reveal-settle { opacity: 0; filter: blur(6px); transform: translateX(8px); }
-  [data-reveal]:not([data-shown]) .rep-needle { left: var(--rep-from); }
-  [data-reveal]:not([data-shown]) .rep-from { opacity: 1; }
-  [data-reveal]:not([data-shown]) .rep-to { opacity: 0; }
 }
-
-/* Estimator sliders: a hairline track filled up to the thumb (--fill) in the brand color. */
-.estimator-range {
-  height: 20px;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-}
-.estimator-range::-webkit-slider-runnable-track {
-  height: 3px;
-  border-radius: 9999px;
-  background: linear-gradient(to right, var(--primary) var(--fill), var(--border) var(--fill));
-}
-.estimator-range::-moz-range-track {
-  height: 3px;
-  border-radius: 9999px;
-  background: linear-gradient(to right, var(--primary) var(--fill), var(--border) var(--fill));
-}
-.estimator-range::-webkit-slider-thumb {
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  margin-top: -7.5px;
-  border-radius: 9999px;
-  background: var(--background);
-  border: 1px solid color-mix(in oklab, var(--foreground) 25%, transparent);
-  box-shadow: 0 1px 4px color-mix(in oklab, black 25%, transparent);
-  transition: transform 150ms ease;
-}
-.estimator-range::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 9999px;
-  background: var(--background);
-  border: 1px solid color-mix(in oklab, var(--foreground) 25%, transparent);
-  box-shadow: 0 1px 4px color-mix(in oklab, black 25%, transparent);
-}
-.estimator-range:active::-webkit-slider-thumb { transform: scale(1.15); }
-.estimator-range:focus-visible { outline: none; }
-.estimator-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px color-mix(in oklab, var(--ring) 35%, transparent); }
-.estimator-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px color-mix(in oklab, var(--ring) 35%, transparent); }
 
 @media (prefers-reduced-motion: reduce) {
   /* Dots rest evenly along the lane instead of travelling. */
   .flow-lane i { animation: none; top: calc(var(--i) * 33% + 16%); }
   @media (min-width: 768px) { .flow-lane i { top: 0; left: calc(var(--i) * 33% + 16%); } }
   .consensus-core::before { animation: none; }
-  .reveal-pop, .reveal-settle, .rep-needle, .rep-from, .rep-to { transition: none; }
+  .reveal-pop, .reveal-settle { transition: none; }
+}
+
+/* Button surface: a top-down gloss and a light sweep on hover. Both are white overlays, so they work
+   on any fill a caller sets (bg-primary, bg-foreground, bg-destructive…). */
+@layer components {
+  .rc-btn {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .rc-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.04) 45%, transparent 60%, rgb(0 0 0 / 0.08));
+    pointer-events: none;
+  }
+  .rc-btn::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 45%;
+    z-index: -1;
+    background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.28), transparent);
+    transform: translateX(-120%) skewX(-18deg);
+    pointer-events: none;
+  }
+  .rc-btn:hover::after {
+    transform: translateX(260%) skewX(-18deg);
+    transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rc-btn::after { display: none; }
+  }
 }

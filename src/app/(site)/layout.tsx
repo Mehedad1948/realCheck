@@ -3,6 +3,7 @@ import { Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Toaster } from '@/components/ui/sonner';
+import { geist } from '@/fonts/geist';
 import { robotoFlex } from '@/fonts/roboto-flex';
 import '../globals.css';
 
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={robotoFlex.variable} suppressHydrationWarning>
-      <body className={`${geistMono.variable} font-sans antialiased`}>
+      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: introScript }} />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}

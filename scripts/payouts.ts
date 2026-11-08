@@ -9,15 +9,15 @@
 //   mark-sent <id> [txHash]    resolve a SENDING withdrawal you confirmed on chain
 //   mark-failed <id> <reason>  resolve a SENDING withdrawal that never went out (refunds it)
 //
-// Environment: DATABASE_URL, TON_NETWORK (mainnet | testnet), PAYOUT_WALLET_MNEMONIC (24 words of
-// a W5 wallet used only for payouts), optional TONCENTER_API_KEY and USDT_JETTON_MASTER, and
+// Environment: DATABASE_URL, TON_NETWORK (mainnet | testnet), PAYOUT_WALLET_MNEMONIC (12 or 24
+// words of a W5 wallet used only for payouts), optional TONCENTER_API_KEY and USDT_JETTON_MASTER, and
 // BOT_TOKEN to tell evaluators when their payout is sent or declined.
 //
 // Safety: `send` marks a withdrawal SENDING before broadcasting and never resends a SENDING one.
 // If the script stops mid-way, check the hot wallet on tonviewer.com and resolve it by hand.
 import { PrismaClient } from '@prisma/client';
 import { Address, beginCell, internal, JettonMaster, JettonWallet, SendMode, toNano, TonClient, WalletContractV5R1 } from '@ton/ton';
-import { mnemonicToPrivateKey } from '@ton/crypto';
+import { deriveEd25519Path, keyPairFromSeed, mnemonicToPrivateKey, mnemonicValidate, pbkdf2_sha512 } from '@ton/crypto';
 import {
   approveWithdrawal,
   markWithdrawalFailed,
@@ -122,9 +122,21 @@ async function reject(id: string | undefined, reason: string) {
 
 // ---------- sending ----------
 
+/**
+ * Keys from a TON-native phrase (usually 24 words) or a 12/24-word BIP39 phrase from a
+ * multi-chain wallet app, which uses the standard TON path m/44'/607'/0'.
+ */
+async function keyFromMnemonic(words: string[]) {
+  if (await mnemonicValidate(words)) return mnemonicToPrivateKey(words);
+  const seed = await pbkdf2_sha512(words.join(' ').normalize('NFKD'), 'mnemonic', 2048, 64);
+  return keyPairFromSeed(await deriveEd25519Path(seed, [44, 607, 0]));
+}
+
 async function hotWallet() {
   const mnemonic = process.env.PAYOUT_WALLET_MNEMONIC?.trim().split(/\s+/);
-  if (!mnemonic || mnemonic.length !== 24) throw new Error('Set PAYOUT_WALLET_MNEMONIC to the 24 words of the payout wallet.');
+  if (!mnemonic || (mnemonic.length !== 12 && mnemonic.length !== 24)) {
+    throw new Error('Set PAYOUT_WALLET_MNEMONIC to the 12 or 24 words of the payout wallet.');
+  }
   const usdtMaster = process.env.USDT_JETTON_MASTER ?? (testOnly ? undefined : MAINNET_USDT);
   if (!usdtMaster) throw new Error('On testnet, set USDT_JETTON_MASTER to the test jetton you pay out.');
 
@@ -132,13 +144,25 @@ async function hotWallet() {
     endpoint: `https://${testOnly ? 'testnet.' : ''}toncenter.com/api/v2/jsonRPC`,
     apiKey: process.env.TONCENTER_API_KEY,
   });
-  const key = await mnemonicToPrivateKey(mnemonic);
+  const key = await keyFromMnemonic(mnemonic);
   const contract = WalletContractV5R1.create({
     publicKey: key.publicKey,
     walletId: { networkGlobalId: testOnly ? -3 : -239, context: { walletVersion: 'v5r1', workchain: 0, subwalletNumber: 0 } },
   });
   const wallet = client.open(contract);
-  const jettonWalletAddress = await client.open(JettonMaster.create(Address.parse(usdtMaster))).getWalletAddress(contract.address);
+  const master = Address.parse(usdtMaster);
+  if (Address.isFriendly(usdtMaster) && Address.parseFriendly(usdtMaster).isTestOnly !== testOnly) {
+    throw new Error(`USDT_JETTON_MASTER ${usdtMaster} is a ${testOnly ? 'mainnet' : 'testnet'} address, but TON_NETWORK is ${network}.`);
+  }
+  let jettonWalletAddress: Address;
+  try {
+    jettonWalletAddress = await client.open(JettonMaster.create(master)).getWalletAddress(contract.address);
+  } catch (error) {
+    throw new Error(
+      `Could not read the USDT contract ${usdtMaster} on ${network} (is USDT_JETTON_MASTER right for this network?)`,
+      { cause: error },
+    );
+  }
   const jettonWallet = client.open(JettonWallet.create(jettonWalletAddress));
   return { client, key, wallet, address: contract.address, jettonWalletAddress, jettonWallet };
 }
@@ -280,7 +304,7 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(error);
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());
