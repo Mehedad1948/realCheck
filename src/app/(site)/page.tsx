@@ -30,6 +30,8 @@ export default function LandingPage() {
       <div aria-hidden className="hero-frame-border pointer-events-none -z-10" />
 
       <header className="fixed inset-x-0 top-0 z-40">
+        {/* Frosted glass that fades in once the page scrolls (.header-glass in globals.css). */}
+        <div aria-hidden className="header-glass absolute inset-0 -z-10" />
         <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
           <Logo />
           <div className="flex items-center gap-1 text-sm">

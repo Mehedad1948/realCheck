@@ -209,8 +209,8 @@ html[data-intro='play'] .landing-intro {
    the near-opaque card looks the same without re-blurring the fixed background on every scroll frame. */
 @media (min-width: 768px) and (pointer: fine) {
   .auth-card {
-    backdrop-filter: blur(24px) saturate(1.4);
     -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    backdrop-filter: blur(24px) saturate(1.4);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -307,8 +307,8 @@ html[data-intro='play'] .landing-intro {
   border-radius: var(--frame-radius);
   /* Frosted glass over the silk: translucent fill plus a strong backdrop blur. */
   background: color-mix(in oklab, var(--background) 75%, transparent);
-  backdrop-filter: blur(40px) saturate(1.4);
   -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  backdrop-filter: blur(40px) saturate(1.4);
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent),
     0 -24px 80px -24px color-mix(in oklab, black 50%, transparent);
@@ -326,6 +326,24 @@ html[data-intro='play'] .landing-intro {
 @media (prefers-reduced-motion: reduce) {
   .hero-parallax { animation: none; }
 }
+
+/* Landing header: clear while the page rests at the top, frosted glass once it scrolls. The glass
+   fades in over the first stretch of scroll; without scroll timelines the header stays clear. */
+.header-glass {
+  opacity: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
+  background: color-mix(in oklab, var(--background) 65%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+}
+@supports (animation-timeline: scroll()) {
+  .header-glass {
+    animation: rc-header-glass linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 120px;
+  }
+}
+@keyframes rc-header-glass { to { opacity: 1; } }
 
 /* Hero copy sits on the silk, whose bright folds can pass right behind it. A soft halo in the page
    color keeps it readable there without a visible box. */
@@ -349,8 +367,8 @@ html[data-intro='play'] .landing-intro {
   /* Blur filters are redrawn on every scroll frame; mobile GPUs feel that, so keep them light. */
   .content-frame,
   .section-frame {
-    backdrop-filter: blur(20px) saturate(1.2);
     -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    backdrop-filter: blur(20px) saturate(1.2);
   }
   @media (prefers-reduced-motion: no-preference) {
     .hero-parallax { animation-name: rc-hero-drift-lite; }
@@ -375,8 +393,8 @@ html[data-intro='play'] .landing-intro {
   background:
     radial-gradient(60% 50% at var(--glow-at, 100% 0%), color-mix(in oklab, var(--glow, var(--primary)) 12%, transparent), transparent),
     color-mix(in oklab, var(--background) 90%, transparent);
-  backdrop-filter: blur(40px) saturate(1.4);
   -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  backdrop-filter: blur(40px) saturate(1.4);
   box-shadow: inset 0 1px 0 color-mix(in oklab, var(--foreground) 8%, transparent);
 }
 
