@@ -3,7 +3,7 @@
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useActionState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Cta } from '@/components/site/cta';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { loginAction } from '@/server/actions/auth';
@@ -28,10 +28,9 @@ export function LoginForm() {
           {state.error}
         </p>
       )}
-      <Button type="submit" className="h-11 w-full" disabled={isPending}>
-        {isPending && <Loader2 className="animate-spin" />}
+      <Cta type="submit" className="w-full" disabled={isPending} icon={isPending ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : undefined}>
         {isPending ? 'Signing in…' : 'Sign in'}
-      </Button>
+      </Cta>
     </form>
   );
 }

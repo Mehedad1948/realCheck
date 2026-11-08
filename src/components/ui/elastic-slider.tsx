@@ -499,7 +499,11 @@ function ElasticSlider({
 
   useEffect(() => {
     const m = motion.current;
-    return () => cancelAnimationFrame(m.raf);
+    return () => {
+      cancelAnimationFrame(m.raf);
+      // Clear the id so kick() can schedule again after a Strict Mode remount.
+      m.raf = 0;
+    };
   }, []);
 
   const along = (event: ReactPointerEvent<HTMLDivElement>) => {

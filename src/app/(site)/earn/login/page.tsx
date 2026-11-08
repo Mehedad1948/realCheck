@@ -1,12 +1,14 @@
 import { Coins, ShieldCheck, Smartphone } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { connection } from 'next/server';
 import { Suspense } from 'react';
 import { AuthShell, type Pitch } from '@/components/site/auth-shell';
 import { Button } from '@/components/ui/button';
 import { MIN_WITHDRAWAL_CENTS, PAYOUT_ASSET } from '@/lib/constants';
 import { formatMoney } from '@/lib/money';
 import { devEvaluatorLoginAction } from '@/server/actions/evaluator-auth';
+import { env } from '@/server/env';
 import { TelegramLogin } from './telegram-login';
 
 export const metadata: Metadata = { title: 'Start earning' };
@@ -41,8 +43,8 @@ export default function EvaluatorLoginPage() {
       }
     >
       {/* The error message comes from ?error=, which is request-time data. */}
-      <Suspense>
-        <TelegramLogin botUsername={process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME} />
+      <Suspense fallback={<div className="h-12" />}>
+        <TelegramSignIn />
       </Suspense>
       {DEV_MOCK && (
         <form action={devEvaluatorLoginAction} className="mt-4">
@@ -53,4 +55,12 @@ export default function EvaluatorLoginPage() {
       )}
     </AuthShell>
   );
+}
+
+// The login popup is addressed by the bot's numeric id, the part of its token before the colon (public,
+// unlike the rest). Read at request time, since the token is a runtime secret absent from builds.
+async function TelegramSignIn() {
+  await connection();
+  const botId = env().BOT_TOKEN?.split(':')[0];
+  return <TelegramLogin botId={botId} />;
 }

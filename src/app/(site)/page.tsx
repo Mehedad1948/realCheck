@@ -1,7 +1,7 @@
-import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { Suspense } from 'react';
+import { Cta, RollText } from '@/components/site/cta';
 import { HeroTitle } from '@/components/site/hero-title';
 import { ForEvaluators } from '@/components/site/landing/for-evaluators';
 import { ForTeams } from '@/components/site/landing/for-teams';
@@ -33,17 +33,17 @@ export default function LandingPage() {
         <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
           <Logo />
           <div className="flex items-center gap-1 text-sm">
-            <a href="#how" className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground sm:block">
-              How it works
+            <a href="#how" className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground sm:block roll-host">
+              <RollText text="How it works" />
             </a>
-            <a href="#teams" className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground md:block">
-              For teams
+            <a href="#teams" className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground md:block roll-host">
+              <RollText text="For teams" />
             </a>
-            <a href="#earn" className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground sm:block">
-              Earn
+            <a href="#earn" className="hidden px-3 py-2 text-muted-foreground transition-colors hover:text-foreground sm:block roll-host">
+              <RollText text="Earn" />
             </a>
-            <Link href="/login" className="px-3 py-2 text-muted-foreground transition-colors hover:text-foreground">
-              Sign in
+            <Link href="/login" className="px-3 py-2 text-muted-foreground transition-colors hover:text-foreground roll-host">
+              <RollText text="Sign in" />
             </Link>
           </div>
         </nav>
@@ -57,15 +57,9 @@ export default function LandingPage() {
             Labeled by people. Accepted only on consensus.
           </p>
           <div className="landing-rise mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 [--rise-delay:300ms]">
-            <Link
-              href="/register"
-              className="group inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-7 font-medium text-background [text-shadow:none] transition-opacity hover:opacity-90"
-            >
-              Start a dataset
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <a href="#earn" className="text-sm font-medium text-foreground/85 transition-colors hover:text-foreground">
-              Start earning →
+            <Cta href="/register">Start a dataset</Cta>
+            <a href="#earn" className="roll-host text-sm font-medium text-foreground/85 transition-colors hover:text-foreground">
+              <RollText text="Start earning →" />
             </a>
           </div>
         </div>
@@ -102,14 +96,9 @@ export default function LandingPage() {
           <div aria-hidden className="absolute -bottom-75 left-1/2 -z-10 h-125 w-200 -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]" />
           <h2 className="mx-auto max-w-3xl px-6 text-5xl font-medium tracking-[-0.04em] md:text-6xl">Start with one file.</h2>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 px-6">
-            <Link
-              href="/register"
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-7 font-medium text-background transition-opacity hover:opacity-90"
-            >
-              Create a free account <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link href="/earn" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              Or start earning →
+            <Cta href="/register">Create a free account</Cta>
+            <Link href="/earn" className="roll-host text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              <RollText text="Or start earning →" />
             </Link>
           </div>
         </section>

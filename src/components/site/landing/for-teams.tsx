@@ -1,5 +1,4 @@
-import { ArrowRight } from 'lucide-react';
-import Link from 'next/link';
+import { Cta } from '@/components/site/cta';
 import { ConsensusBoard } from './consensus-board';
 import { CostEstimator } from './cost-estimator';
 import { SectionHeading } from './section-heading';
@@ -14,13 +13,9 @@ export function ForTeams() {
             Upload a CSV. Get back only what people agree on.
           </SectionHeading>
 
-          <Link
-            href="/register"
-            className="group mt-10 inline-flex h-12 items-center gap-2 rounded-full bg-foreground px-7 font-medium text-background transition-opacity hover:opacity-90"
-          >
+          <Cta href="/register" className="mt-10">
             Start a dataset
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          </Cta>
         </div>
 
         <ConsensusBoard />
