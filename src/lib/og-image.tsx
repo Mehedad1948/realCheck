@@ -16,14 +16,6 @@ function load(...path: string[]) {
   return readFile(join(process.cwd(), ...path));
 }
 
-function siteHost() {
-  try {
-    return new URL(process.env.NEXT_PUBLIC_APP_URL ?? '').host;
-  } catch {
-    return 'realcheck';
-  }
-}
-
 export async function renderOgImage({ lines, subtitle }: { lines: [string, string]; subtitle: string }) {
   const [silk, display, text, textMedium] = await Promise.all([
     load('public/images/silk-og.jpg'),
@@ -102,8 +94,7 @@ export async function renderOgImage({ lines, subtitle }: { lines: [string, strin
             <span style={{ marginTop: 30, fontSize: 30, letterSpacing: '-0.01em', color: 'rgba(236,233,255,0.82)' }}>{subtitle}</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 22, letterSpacing: '0.02em', color: 'rgba(236,233,255,0.6)' }}>{siteHost()}</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
             <div
               style={{
                 display: 'flex',
