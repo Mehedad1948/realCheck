@@ -5,15 +5,26 @@ import { Toaster } from '@/components/ui/sonner';
 import { manrope } from '@/fonts/manrope';
 import { robotoFlex } from '@/fonts/roboto-flex';
 import { TelegramProvider } from '@/features/tma/telegram-provider';
+import { siteName, siteUrl } from '@/lib/site';
 import '../globals.css';
 
 // Root layout for the Telegram Mini App (/app). Separate from the website's root
 // layout: no site chrome, Telegram's viewport, React Query for the BFF. Manrope for text, Roboto Flex
 // for headlines and figures, as on the landing page.
 
+// app/opengraph-image.tsx supplies og:image for links to the Mini App shared in chats.
 export const metadata: Metadata = {
-  title: 'RealCheck',
+  metadataBase: siteUrl,
+  title: siteName,
   description: 'Label data and get paid, right inside Telegram.',
+  applicationName: siteName,
+  openGraph: {
+    type: 'website',
+    siteName,
+    title: 'RealCheck for Telegram',
+    description: 'Label data and get paid, right inside Telegram.',
+  },
+  twitter: { card: 'summary_large_image' },
 };
 
 export const viewport: Viewport = {
