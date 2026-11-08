@@ -53,10 +53,10 @@ export default function LandingPage() {
       <section className="hero-parallax relative flex min-h-svh flex-col pt-22">
         <div className="hero-legible mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">
           <HeroTitle className="landing-rise text-[clamp(2.75rem,7vw,5.75rem)] leading-[1.02] tracking-[-0.03em]" />
-          <p className="landing-rise mt-7 text-base text-foreground/85 [--rise-delay:150ms] md:text-lg">
+          <p className="landing-rise mt-7 text-base text-balance text-foreground/85 [--rise-delay:150ms] md:text-lg">
             Labeled by people. Accepted only on consensus.
           </p>
-          <div className="landing-rise mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 [--rise-delay:300ms]">
+          <div className="landing-rise mt-10 flex flex-col items-center justify-center gap-x-8 gap-y-5 [--rise-delay:300ms] sm:flex-row">
             <Cta href="/register">Start a dataset</Cta>
             <a href="#earn" className="roll-host text-sm font-medium text-foreground/85 transition-colors hover:text-foreground">
               <RollText text="Start earning →" />
@@ -92,10 +92,10 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="relative isolate overflow-hidden py-40 text-center">
+        <section className="relative isolate overflow-hidden py-28 text-center md:py-40">
           <div aria-hidden className="absolute -bottom-75 left-1/2 -z-10 h-125 w-200 -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]" />
-          <h2 className="mx-auto max-w-3xl px-6 text-5xl font-medium tracking-[-0.04em] md:text-6xl">Start with one file.</h2>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 px-6">
+          <h2 className="mx-auto max-w-3xl px-6 text-[2.75rem] leading-[1.05] font-medium tracking-[-0.04em] text-balance sm:text-5xl md:text-6xl">Start with one file.</h2>
+          <div className="mt-10 flex flex-col items-center justify-center gap-x-8 gap-y-5 px-6 sm:flex-row">
             <Cta href="/register">Create a free account</Cta>
             <Link href="/earn" className="roll-host text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               <RollText text="Or start earning →" />
@@ -129,10 +129,10 @@ async function PlatformStats() {
     { label: 'Evaluators', value: stats.evaluators },
   ];
   return (
-    <dl className="flex gap-10 text-sm">
+    <dl className="grid w-full max-w-md grid-cols-3 gap-2 text-sm sm:flex sm:w-auto sm:max-w-none sm:gap-10">
       {items.map((item) => (
-        <div key={item.label} className="flex flex-col-reverse items-center">
-          <dt className="text-foreground/75">{item.label}</dt>
+        <div key={item.label} className="flex flex-col-reverse items-center text-center">
+          <dt className="text-xs whitespace-nowrap text-foreground/75 sm:text-sm">{item.label}</dt>
           <dd className="text-lg font-medium tabular-nums">{item.value.toLocaleString('en-US')}</dd>
         </div>
       ))}

@@ -85,8 +85,8 @@ function SideCard({
         {icon}
       </span>
       <p className="mt-8 text-sm font-medium text-foreground/70">{eyebrow}</p>
-      <h3 className="mt-2 text-2xl leading-tight font-medium tracking-tight">{title}</h3>
-      <p className="mt-2 text-lg text-foreground/80">{text}</p>
+      <h3 className="mt-2 text-2xl leading-tight font-medium tracking-tight text-balance">{title}</h3>
+      <p className="mt-2 text-lg text-pretty text-foreground/80">{text}</p>
       <span className="mt-auto inline-flex items-center gap-1.5 pt-8 text-sm font-medium">
         {cta}
         <ArrowDown className="h-4 w-4 transition-transform duration-300 group-hover:translate-y-0.5" />
@@ -97,10 +97,13 @@ function SideCard({
 
 type LaneProps = { label: string; tone: string; reverse?: boolean };
 
-/** Two lanes between a card and the core: one carrying work toward the core, one carrying results back. */
+/**
+ * Two lanes between a card and the core: one carrying work toward the core, one carrying results back.
+ * On phones they mirror each other around the core's centre line, labels on the outside.
+ */
 function LanePair({ top, bottom }: { top: LaneProps; bottom: LaneProps }) {
   return (
-    <div className="flex h-28 w-full justify-center gap-14 md:h-auto md:flex-1 md:flex-col md:gap-7 md:px-3">
+    <div className="grid h-28 w-full grid-cols-2 gap-10 md:flex md:h-auto md:flex-1 md:flex-col md:gap-7 md:px-3">
       <Lane {...top} labelFirst />
       <Lane {...bottom} />
     </div>
@@ -110,7 +113,9 @@ function LanePair({ top, bottom }: { top: LaneProps; bottom: LaneProps }) {
 /** A hairline with dots travelling along it: down on phones, sideways from md up. */
 function Lane({ label, tone, reverse, labelFirst }: LaneProps & { labelFirst?: boolean }) {
   return (
-    <div className={`flex items-center gap-3 md:items-stretch md:gap-2 ${labelFirst ? 'md:flex-col-reverse' : 'md:flex-col'}`}>
+    <div
+      className={`flex items-center gap-3 md:items-stretch md:gap-2 ${labelFirst ? 'flex-row-reverse justify-self-end md:flex-col-reverse' : 'justify-self-start md:flex-col'}`}
+    >
       <div className="flow-lane h-full w-px md:h-px md:w-full" data-reverse={reverse ? '' : undefined} style={{ '--tone': tone } as CSSProperties}>
         {[0, 1, 2].map((i) => (
           <i key={i} style={{ '--i': i } as CSSProperties} />

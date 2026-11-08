@@ -13,7 +13,7 @@ export function ForEvaluators({ telegramUrl }: { telegramUrl: string | null }) {
   return (
     <div className="grid items-center gap-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20">
       {/* The phone leads on large screens, so the two audience sections mirror each other. */}
-      <div className="relative order-last px-6 pb-8 lg:order-first">
+      <div className="relative order-last sm:px-6 sm:pb-8 lg:order-first">
         <div aria-hidden className="absolute inset-x-0 top-1/4 -z-10 mx-auto h-2/3 max-w-md rounded-full bg-primary/20 blur-[90px]" />
         <TaskPreview />
       </div>
@@ -23,12 +23,12 @@ export function ForEvaluators({ telegramUrl }: { telegramUrl: string | null }) {
           Quick questions on the web or in Telegram. Paid for every accepted answer.
         </SectionHeading>
 
-        <ol className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 text-base text-foreground/80">
+        <ol className="mt-8 flex flex-col gap-3 text-base text-foreground/80 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-2">
           {journey.map((step, i) => (
             <Fragment key={step}>
               {i > 0 && <li aria-hidden className="hidden h-px w-6 bg-foreground/25 sm:block" />}
               <li className="flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-telegram/15 font-mono text-xs font-medium text-telegram dark:text-sky-300">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-telegram/15 font-mono text-xs font-medium text-telegram dark:text-sky-300">
                   {i + 1}
                 </span>
                 {step}
@@ -37,13 +37,13 @@ export function ForEvaluators({ telegramUrl }: { telegramUrl: string | null }) {
           ))}
         </ol>
 
-        <div className="mt-10 flex flex-wrap items-center gap-3">
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           {telegramUrl && (
-            <Cta href={telegramUrl} tone="telegram" badge={<Send />} icon={null}>
+            <Cta href={telegramUrl} tone="telegram" badge={<Send />} icon={null} className="w-full sm:w-auto">
               Open in Telegram
             </Cta>
           )}
-          <Cta href="/earn" tone="outline">
+          <Cta href="/earn" tone="outline" className="w-full sm:w-auto">
             Label on the web
           </Cta>
         </div>
